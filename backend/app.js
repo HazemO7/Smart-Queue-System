@@ -16,8 +16,16 @@ async function connectDB() {
         console.log('Error connecting to MongoDB');
     }
 }
+
 connectDB();
 
+
+
+// Importing Routes
+const authRoutes = require('./src/routes/authRoutes');
+
+// Using Routes
+app.use('/api/auth', authRoutes);
 
 // listing to the server
 app.listen(PORT, () => {

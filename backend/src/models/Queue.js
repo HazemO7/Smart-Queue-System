@@ -32,7 +32,7 @@ const queueSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-queueSchema.index({ clinicId: 1, isActive: 1 }); 
+
 
 const Queue = mongoose.model("Queue", queueSchema);
 module.exports = Queue;
