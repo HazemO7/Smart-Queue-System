@@ -1,7 +1,7 @@
 const Joi = require('joi');
 
-exports.registerValidation = (req, res, next) => {
-    const schema = Joi.object({
+// Validation schema for registration
+    const registerSchema = Joi.object({
         name: Joi.string().trim().required().messages({
             'string.empty': 'الرجاء إدخال الاسم',
             'any.required': 'حقل الاسم مطلوب'
@@ -24,14 +24,19 @@ exports.registerValidation = (req, res, next) => {
         })
     });
 
-    const { error } = schema.validate(req.body);
 
-    if (error) {
-        return res.status(400).json({
-            success: false,
-            message: error.details[0].message
-        });
-    }
+// Validation schema for login
+    const loginSchema = Joi.object({
+        phone: Joi.string().pattern(/^01[0125][0-9]{8}$/).required().messages({
+            'string.pattern.base': 'الرجاء إدخال رقم هاتف مصري صحيح',
+            'string.empty': 'الرجاء إدخال رقم الهاتف',
+            'any.required': 'رقم الهاتف مطلوب'
+        }),
+        password: Joi.string().required().messages({
+            'string.empty': 'الرجاء إدخال كلمة المرور',
+            'any.required': 'كلمة المرور مطلوبة'
+        })
+    });
 
-    next();
-};
+
+module.exports = { registerSchema , loginSchema };

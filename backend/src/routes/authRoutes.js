@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController');
-const { registerValidation } = require('../validations/authValidation');
+const {register} = require('../controllers/authController');
 
-// مسار التسجيل: POST /api/auth/register
-router.post('/register', registerValidation, authController.register);
+
+// POST /api/auth/register
+router.post('/register', register);
 
 module.exports = router;
+

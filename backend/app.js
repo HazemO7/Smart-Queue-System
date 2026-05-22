@@ -25,6 +25,7 @@ connectDB();
 const authRoutes = require('./src/routes/authRoutes');
 
 // Using Routes
+
 app.use('/api/auth', authRoutes);
 
 // listing to the server
