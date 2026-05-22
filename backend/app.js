@@ -28,6 +28,7 @@ const authRoutes = require('./src/routes/authRoutes');
 
 app.use('/api/auth', authRoutes);
 
+
 // listing to the server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

@@ -39,15 +39,83 @@ const register = async (req, res) => {
     // Response
     res.status(201).json({
       msg: "Done Created User",
-      data: { name: user.name, phone: user.phone, role: user.role }
+      data: [{ name: user.name, phone: user.phone, role: user.role }]
     });
   } catch (error) {
     console.log(error);
   }
 };
 
-//////////////// login user ///////////////////////
+
+
+/////////////// login user ////////////////////
+const login = async (req, res) => {
+  try {
+    const { error, value } = loginSchema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+
+
+    if (error) {
+      return res.status(400).json({
+        msg: error.details.map((err) => err.message),
+      });
+    }
+
+    const { phone, password } = value;
+    // search for user by phone number
+    const user = await User.findOne({ phone }).select("+password");
+
+    if (!user || !user.password) {
+      return res.status(401).json({ msg: "Invalid phone number or password" });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+   
+    if (!isPasswordValid) {
+      return res.status(401).json({ msg: "Invalid phone number or password" });
+    }
+    // genrate JWT token
+    const token = jwt.sign(
+      { userId: user._id, role: user.role }, 
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" } // صلاحية التوكن 7 أيام
+    );
+
+    // respone with token and user data (excluding password)
+    res.status(200).json({
+      msg: "Login successful",
+      token: token,  
+      data: {
+        id: user._id,
+        name: user.name,
+        phone: user.phone,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ msg: "Internal server error" });
+  }
+};
+
+/////////////// logout user /////////////
+
+const logout = async (req, res) => {
+  try {   
+    res.status(200).json({
+      msg: "Logout successful",     
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ msg: "Internal server error" });
+  }
+};
 
 module.exports = {
-    register
+    register , login, logout
 };
+
+
