@@ -23,11 +23,12 @@ connectDB();
 
 // Importing Routes
 const authRoutes = require('./src/routes/authRoutes');
+const clinicRoutes = require('./src/routes/clinicRoutes');
 
 // Using Routes
 
 app.use('/api/auth', authRoutes);
-
+app.use('/api/clinic', clinicRoutes);
 
 // listing to the server
 app.listen(PORT, () => {
