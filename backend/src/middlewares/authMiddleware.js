@@ -20,10 +20,9 @@ const verifyToken = (req, res, next) => {
     }
 };
 
+
 // Middleware to check if user is admin
 const isAdmin = (req, res, next) => {
-    // يجب أن تكون هذه الدالة بعد verifyToken في الـ Routes
-    // لذا نحن متأكدون أن req.user موجود هنا
     if (req.user && req.user.role === "admin") {
         next();
     } else {
