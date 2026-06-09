@@ -1,12 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const {createClinic} = require('../controllers/clinicController');
+const { createQueue } = require('../controllers/queueController');
 const { verifyToken, isAdmin } = require('../middlewares/authMiddleware');
 
-// POST /api/clinic/create
+// POST / api/queue/create
 
-router.post('/create', verifyToken,  isAdmin, createClinic);
-
+router.post('/create', verifyToken, isAdmin, createQueue);
 
 
 module.exports = router;
