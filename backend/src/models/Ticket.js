@@ -33,8 +33,6 @@ ticketSchema.index(
 
 
 
-
-
 const Ticket = mongoose.model("Ticket", ticketSchema);
 module.exports = Ticket;
 

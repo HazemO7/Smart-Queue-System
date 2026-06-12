@@ -29,8 +29,10 @@ const queueSchema = new mongoose.Schema(
       default: 10,
     },
   },
+  
   { timestamps: true }
 );
+
 
 
 
