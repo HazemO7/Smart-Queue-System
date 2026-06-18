@@ -2,15 +2,24 @@ const mongoose = require('mongoose');
 
 const ticketSchema = new mongoose.Schema(
   {
+    clinicId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Clinic',
+      required: [true, 'Ticket must belong to a clinic'],
+    },
     queueId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Queue', // Logical relation to the Queue collection
-      required: true,
+      ref: 'Queue', 
+      required: false, 
     },
     patientId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User', // Logical relation to the User collection
+      ref: 'User',
       required: true,
+    },
+    bookingDate: {
+      type: Date,
+      required: [true, 'Booking date is required'],
     },
     ticketNumber: {
       type: Number,
@@ -26,13 +35,11 @@ const ticketSchema = new mongoose.Schema(
 );
 
 ticketSchema.index(
-  { queueId: 1, ticketNumber: 1 },
+  { clinicId: 1, bookingDate: 1, ticketNumber: 1 },
   { unique: true }
 );
 
-
-
+ticketSchema.index({ clinicId: 1, patientId: 1, bookingDate: 1 });
 
 const Ticket = mongoose.model("Ticket", ticketSchema);
 module.exports = Ticket;
-
