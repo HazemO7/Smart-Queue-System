@@ -14,6 +14,7 @@ const createTicket = async (req, res) => {
         if(existingTicket){
             return res.status(400).json({ message: 'Ticket number already exists in this queue' });
         }
+
         const newTicket = new Ticket({ queueId, patientId, ticketNumber });
         await newTicket.save();
         res.status(201).json({
@@ -24,6 +25,7 @@ const createTicket = async (req, res) => {
         res.status(500).json({
              message: 'Error creating ticket',
               error
-             });
+         });
     }
 }
+
