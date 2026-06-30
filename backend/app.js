@@ -1,7 +1,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 require('dotenv').config();
 
@@ -25,12 +27,14 @@ connectDB();
 const authRoutes = require('./src/routes/authRoutes');
 const clinicRoutes = require('./src/routes/clinicRoutes');
 const queueRoutes = require('./src/routes/queueRoutes');
+const ticketRoutes = require('./src/routes/ticketRoutes');
 
 // Using Routes
 
 app.use('/api/auth', authRoutes);
 app.use('/api/clinic', clinicRoutes);
 app.use('/api/queue', queueRoutes);
+app.use('/api/ticket', ticketRoutes);
 
 
 

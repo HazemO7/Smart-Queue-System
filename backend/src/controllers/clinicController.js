@@ -2,7 +2,7 @@ const Clinc = require("../models/Clinic");
 
 /////////////// create clinic ////////////////////
 
-const createClinic = async (req, res) =>{
+const createClinic = async (req, res, next) =>{
     try{
         const {name, description} = req.body;
         if(!name) return res.status(400).json({msg: "Missing Data"});
@@ -15,7 +15,7 @@ const createClinic = async (req, res) =>{
         });
       
     }catch(error){
-        console.log(error);
+        next(error);
     }
 
 }
