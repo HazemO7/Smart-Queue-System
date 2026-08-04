@@ -400,4 +400,338 @@ h1, h2, h3, h4, h5, h6 {
     min-height: 56px;
     font-size: 1.05rem;
   }
+
+  .section-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .card-body.p-4 {
+    padding: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 15px;
+  }
+
+  .page-title {
+    font-size: 1.3rem;
+  }
+
+  .btn-cta-primary,
+  .btn-cta-secondary {
+    min-height: 48px;
+    font-size: 0.95rem;
+    padding: 10px 20px;
+  }
+
+  .btn-lg {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .form-control-lg {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .section-subtitle {
+    font-size: 1rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   Admin Dashboard Styles
+   ═══════════════════════════════════════════════ */
+
+/* Welcome Banner */
+.dash-welcome-card {
+  background: linear-gradient(135deg, #4A90D9 0%, #357ABD 50%, #2C6AA0 100%);
+  color: white;
+  border-radius: var(--sq-radius-lg) !important;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.dash-welcome-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.dash-welcome-sub {
+  opacity: 0.85;
+  font-size: 0.9rem;
+}
+
+.dash-open-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  border-radius: var(--sq-radius-pill);
+  padding: 8px 16px;
+  font-size: 0.95rem;
+}
+
+.dash-open-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2ECC71;
+  animation: pulse 2s infinite;
+}
+
+/* Stat Cards */
+.dash-stat-card {
+  border-radius: var(--sq-radius-md) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.dash-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sq-shadow-lg);
+}
+
+.dash-stat-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.dash-stat-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.dash-stat-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Color variants */
+.dash-stat-blue {
+  background: linear-gradient(135deg, #EBF2FC 0%, #D6E6F9 100%);
+}
+.dash-stat-blue .dash-stat-icon-wrap {
+  background: rgba(74, 144, 217, 0.15);
+  color: #4A90D9;
+}
+.dash-stat-blue .dash-stat-value { color: #2C6AA0; }
+
+.dash-stat-cyan {
+  background: linear-gradient(135deg, #E0F7FA 0%, #B2EBF2 100%);
+}
+.dash-stat-cyan .dash-stat-icon-wrap {
+  background: rgba(0, 188, 212, 0.15);
+  color: #00ACC1;
+}
+.dash-stat-cyan .dash-stat-value { color: #00838F; }
+
+.dash-stat-purple {
+  background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%);
+}
+.dash-stat-purple .dash-stat-icon-wrap {
+  background: rgba(156, 39, 176, 0.15);
+  color: #9C27B0;
+}
+.dash-stat-purple .dash-stat-value { color: #7B1FA2; }
+
+.dash-stat-amber {
+  background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+}
+.dash-stat-amber .dash-stat-icon-wrap {
+  background: rgba(255, 160, 0, 0.15);
+  color: #FFA000;
+}
+.dash-stat-amber .dash-stat-value { color: #E65100; }
+
+.dash-stat-green {
+  background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+}
+.dash-stat-green .dash-stat-icon-wrap {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ECC71;
+}
+.dash-stat-green .dash-stat-value { color: #1B8A4A; }
+
+.dash-stat-rose {
+  background: linear-gradient(135deg, #FCE4EC 0%, #F8BBD0 100%);
+}
+.dash-stat-rose .dash-stat-icon-wrap {
+  background: rgba(233, 30, 99, 0.15);
+  color: #E91E63;
+}
+.dash-stat-rose .dash-stat-value { color: #AD1457; }
+
+/* Ticket Breakdown Bar */
+.dash-breakdown-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  gap: 2px;
+}
+
+.dash-bar-segment {
+  border-radius: 6px;
+  transition: flex 0.4s ease;
+}
+
+.dash-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* Clinic Cards */
+.dash-clinic-card {
+  border-radius: var(--sq-radius-md) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.dash-clinic-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sq-shadow-md);
+}
+
+.dash-clinic-icon {
+  font-size: 1.8rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sq-bg-secondary);
+  border-radius: 12px;
+}
+
+.dash-clinic-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dash-serving-badge {
+  font-size: 0.85rem;
+  color: var(--sq-text-light);
+  background: var(--sq-bg-secondary);
+  padding: 4px 12px;
+  border-radius: var(--sq-radius-pill);
+}
+
+.dash-clinic-mini-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  background: var(--sq-bg-secondary);
+  border-radius: var(--sq-radius-sm);
+}
+
+/* Dashboard responsive */
+@media (max-width: 768px) {
+  .dash-welcome-title {
+    font-size: 1.2rem;
+  }
+
+  .dash-welcome-card .p-4 {
+    padding: 1rem !important;
+  }
+
+  .dash-open-indicator {
+    display: none;
+  }
+
+  .dash-stat-value {
+    font-size: 1.3rem;
+  }
+
+  .dash-stat-label {
+    font-size: 0.65rem;
+  }
+
+  .dash-stat-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+
+  .dash-stat-icon-wrap svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .dash-clinic-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.4rem;
+  }
+
+  .dash-clinic-mini-stat {
+    padding: 6px 2px;
+  }
+
+  .dash-serving-badge {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+  }
+
+  .dash-breakdown-bar {
+    height: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-welcome-title {
+    font-size: 1.05rem;
+  }
+
+  .dash-welcome-sub {
+    font-size: 0.8rem;
+  }
+
+  .dash-stat-value {
+    font-size: 1.1rem;
+  }
+
+  .dash-stat-label {
+    font-size: 0.58rem;
+    letter-spacing: 0;
+  }
+
+  .dash-stat-icon-wrap {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 4px !important;
+  }
+
+  .dash-stat-card .p-3 {
+    padding: 0.5rem !important;
+  }
+
+  .dash-clinic-mini-stat .fw-bold {
+    font-size: 0.9rem;
+  }
+
+  .dash-clinic-mini-stat .small {
+    font-size: 0.65rem;
+  }
 }

@@ -107,6 +107,19 @@ const translations = {
     // Footer
     footerText: '© 2026 Smart Queue System. All rights reserved.',
     footerDesc: 'Making healthcare visits easier for everyone.',
+    
+    // Notifications
+    notifications: 'Notifications',
+    noNotifications: 'No notifications yet',
+    markAllRead: 'Mark all as read',
+    yourTurnTitle: "It's your turn!",
+    yourTurnMessage: 'Please proceed to the clinic.',
+    bookingConfirmedTitle: 'Booking Confirmed',
+    justNow: 'Just now',
+    minutesAgo: 'min ago',
+    hoursAgo: 'h ago',
+    emailAddress: 'Email Address',
+    emailPlaceholder: 'Enter your email (optional)',
   },
   ar: {
     // Navbar
@@ -212,6 +225,19 @@ const translations = {
     // Footer
     footerText: '© 2026 نظام الطابور الذكي. جميع الحقوق محفوظة.',
     footerDesc: 'نجعل زيارات الرعاية الصحية أسهل للجميع.',
+    
+    // Notifications
+    notifications: 'الإشعارات',
+    noNotifications: 'لا توجد إشعارات بعد',
+    markAllRead: 'تعيين الكل كمقروء',
+    yourTurnTitle: 'حان دورك!',
+    yourTurnMessage: 'يرجى التوجه إلى العيادة.',
+    bookingConfirmedTitle: 'تم تأكيد الحجز',
+    justNow: 'الآن',
+    minutesAgo: 'دقيقة مضت',
+    hoursAgo: 'ساعة مضت',
+    emailAddress: 'البريد الإلكتروني',
+    emailPlaceholder: 'أدخل بريدك الإلكتروني (اختياري)',
   }
 };
 

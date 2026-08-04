@@ -547,6 +547,170 @@ html[dir="rtl"] .input-with-icon {
   .ticket-number-massive {
     font-size: 5rem;
   }
+
+  .ticket-number-preview {
+    font-size: 2.5rem;
+  }
+
+  .serving-number {
+    font-size: 3rem;
+  }
+
+  .btn-next-patient {
+    min-height: 64px;
+    font-size: 1.1rem;
+  }
+
+  .btn-confirm-booking {
+    min-height: 56px;
+    font-size: 1.1rem;
+  }
+
+  .queue-table th {
+    padding: 10px 8px;
+    font-size: 0.75rem;
+  }
+
+  .queue-table td {
+    padding: 10px 8px;
+    font-size: 0.85rem;
+  }
+
+  .booking-clinic-icon {
+    font-size: 2.2rem;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .clinic-icon {
+    font-size: 2rem;
+  }
+
+  .auth-page {
+    min-height: auto;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .auth-icon-circle {
+    width: 56px;
+    height: 56px;
+  }
+
+  .auth-title {
+    font-size: 1.4rem;
+  }
+
+  .feature-icon-wrapper {
+    width: 56px;
+    height: 56px;
+  }
+
+  .section-title {
+    font-size: 1.4rem;
+  }
+
+  .cta-title {
+    font-size: 1.4rem;
+  }
+
+  .info-card-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .ticket-label {
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+  }
+
+  .empty-ticket {
+    padding: 40px 16px;
+  }
+
+  .stat-icon-circle {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 1.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .hero-section {
+    padding: 28px 0 40px;
+  }
+
+  .ticket-number-massive {
+    font-size: 3.5rem;
+  }
+
+  .ticket-number-preview {
+    font-size: 2rem;
+  }
+
+  .serving-number {
+    font-size: 2.5rem;
+  }
+
+  .btn-next-patient {
+    min-height: 56px;
+    font-size: 1rem;
+  }
+
+  .btn-confirm-booking {
+    min-height: 48px;
+    font-size: 1rem;
+  }
+
+  .queue-table th {
+    padding: 8px 6px;
+    font-size: 0.7rem;
+    letter-spacing: 0;
+  }
+
+  .queue-table td {
+    padding: 8px 6px;
+    font-size: 0.8rem;
+  }
+
+  .clinic-name {
+    font-size: 1rem;
+  }
+
+  .auth-title {
+    font-size: 1.25rem;
+  }
+
+  .ticket-clinic-name {
+    font-size: 1.05rem;
+  }
+
+  .ticket-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+  }
+
+  .success-icon-circle {
+    width: 64px;
+    height: 64px;
+  }
+
+  .feature-card-title {
+    font-size: 1rem;
+  }
+
+  .feature-card-text {
+    font-size: 0.85rem;
+  }
 }
 
 
@@ -681,12 +845,6 @@ html[dir="rtl"] .input-with-icon {
    RTL ADJUSTMENTS
    =========================================== */
 
-html[dir="rtl"] .d-flex.gap-2,
-html[dir="rtl"] .d-flex.gap-3 {
-  /* flex gap works natively in RTL */
-  gap: unset !important;
-}
-
 html[dir="rtl"] .me-1 {
   margin-right: 0 !important;
   margin-left: 0.25rem !important;
@@ -710,3 +868,340 @@ html[dir="rtl"] .text-start {
 html[dir="rtl"] .text-end {
   text-align: left !important;
 }
+
+/* ─── Notification Bell ────────────────────────────── */
+.notification-bell-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.notification-bell-btn {
+  background: none;
+  border: 1px solid #dee2e6;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  color: #495057;
+}
+
+.notification-bell-btn:hover {
+  background: #f8f9fa;
+  border-color: #4A90D9;
+  color: #4A90D9;
+}
+
+.notification-bell-btn.has-unread {
+  animation: bellPulse 2s infinite;
+}
+
+@keyframes bellPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #dc3545;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid white;
+  line-height: 1;
+}
+
+/* ─── Notification Dropdown ────────────────────────── */
+.notification-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 360px;
+  max-height: 440px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 2px 10px rgba(0, 0, 0, 0.08);
+  z-index: 1050;
+  overflow: hidden;
+  animation: dropdownSlideIn 0.2s ease;
+}
+
+html[dir="rtl"] .notification-dropdown {
+  right: auto;
+  left: 0;
+}
+
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notification-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.notification-dropdown-header h6 {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.notification-dropdown-header button {
+  background: none;
+  border: none;
+  color: #4A90D9;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.notification-dropdown-header button:hover {
+  background: #e8f4fd;
+}
+
+.notification-dropdown-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.notification-dropdown-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.notification-dropdown-list::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 2px;
+}
+
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f8f8f8;
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+}
+
+.notification-item:hover {
+  background: #f8f9fa;
+}
+
+.notification-item.unread {
+  background: #f0f7ff;
+}
+
+.notification-item.unread:hover {
+  background: #e4effc;
+}
+
+.notification-item-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.notification-item-icon.your-turn {
+  background: #d4edda;
+  color: #28a745;
+}
+
+.notification-item-icon.booking {
+  background: #e8f4fd;
+  color: #4A90D9;
+}
+
+.notification-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-item-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #212529;
+  margin-bottom: 2px;
+}
+
+.notification-item-message {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notification-item-time {
+  font-size: 0.7rem;
+  color: #adb5bd;
+}
+
+.notification-item-dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #adb5bd;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.15s;
+  line-height: 1;
+}
+
+html[dir="rtl"] .notification-item-dismiss {
+  right: auto;
+  left: 8px;
+}
+
+.notification-item:hover .notification-item-dismiss {
+  opacity: 1;
+}
+
+.notification-item-dismiss:hover {
+  background: #f0f0f0;
+  color: #495057;
+}
+
+.notification-unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4A90D9;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.notification-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #adb5bd;
+}
+
+.notification-empty-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  opacity: 0.4;
+}
+
+/* ─── Notification Toast ───────────────────────────── */
+.notification-toast {
+  border-left: 4px solid #28a745 !important;
+  border-radius: 10px !important;
+  animation: toastSlideIn 0.3s ease;
+}
+
+html[dir="rtl"] .notification-toast {
+  border-left: none !important;
+  border-right: 4px solid #28a745 !important;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.notification-toast-header {
+  background: #f0fff4 !important;
+  padding: 10px 14px !important;
+}
+
+.notification-toast-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #d4edda;
+  color: #28a745;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-toast-body {
+  padding: 10px 14px !important;
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+/* ─── Responsive Notifications for Mobile ──────────── */
+@media (max-width: 767.98px) {
+  .notification-dropdown {
+    position: fixed !important;
+    top: 65px !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 440px;
+    margin: 0 auto;
+    max-height: calc(100vh - 100px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25), 0 0 0 100vw rgba(0, 0, 0, 0.2) !important;
+    z-index: 1100;
+  }
+
+  html[dir="rtl"] .notification-dropdown {
+    left: 16px !important;
+    right: 16px !important;
+  }
+
+  .notification-dropdown-list {
+    max-height: calc(100vh - 170px);
+  }
+
+  /* Make dismiss button visible on mobile touch screens without hover */
+  .notification-item-dismiss {
+    opacity: 0.7 !important;
+    padding: 6px;
+    top: 6px;
+    right: 6px;
+  }
+
+  html[dir="rtl"] .notification-item-dismiss {
+    right: auto !important;
+    left: 6px !important;
+  }
+
+  .notification-toast {
+    width: 100% !important;
+  }
+}
+

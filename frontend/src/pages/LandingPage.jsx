@@ -113,7 +113,7 @@ function LandingPage() {
       {/* Bottom CTA */}
       <section className="cta-section py-5">
         <Container className="text-center">
-          <div className="cta-card p-5 rounded-4">
+          <div className="cta-card p-3 p-md-5 rounded-4">
             <h2 className="cta-title mb-3">{t('heroTitle')}</h2>
             <p className="cta-subtitle mb-4 text-muted">{t('heroSubtitle')}</p>
             <Button

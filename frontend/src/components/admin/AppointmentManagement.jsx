@@ -208,7 +208,7 @@ function AppointmentManagement({ clinicId }) {
                         <td>
                           <Badge
                             bg={isOpen ? 'success' : 'secondary'}
-                            className="px-3 py-2 rounded-pill"
+                            className="px-2 px-sm-3 py-2 rounded-pill"
                           >
                             {isOpen ? 'Open' : 'Closed'}
                           </Badge>
@@ -238,9 +238,9 @@ function AppointmentManagement({ clinicId }) {
                             title={isOpen ? 'Close appointment' : 'Open appointment'}
                           >
                             {isOpen ? (
-                              <><FiToggleRight size={14} className="me-1" /> Close</>
+                              <><FiToggleRight size={14} /><span className="d-none d-sm-inline ms-1">Close</span></>
                             ) : (
-                              <><FiToggleLeft size={14} className="me-1" /> Open</>
+                              <><FiToggleLeft size={14} /><span className="d-none d-sm-inline ms-1">Open</span></>
                             )}
                           </Button>
                           <Button

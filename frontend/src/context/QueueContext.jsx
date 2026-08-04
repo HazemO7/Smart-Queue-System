@@ -56,6 +56,10 @@ export function QueueProvider({ children }) {
   const [adminAppointments, setAdminAppointments] = useState([]);
   const [loadingAdminAppointments, setLoadingAdminAppointments] = useState(false);
 
+  // Dashboard stats state
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+
   const [errors, setErrors] = useState({ appointments: '', booking: '', queue: '', adminAppointments: '' });
 
   const { socket, isConnected } = useSocket();
@@ -378,6 +382,32 @@ export function QueueProvider({ children }) {
   );
 
   // ─────────────────────────────────────────────
+  //  Admin Dashboard Stats
+  // ─────────────────────────────────────────────
+
+  const fetchDashboardStats = useCallback(async () => {
+    setLoadingStats(true);
+    try {
+      const res = await api.get('/admin/stats');
+      setDashboardStats(res.data?.data || null);
+    } catch (err) {
+      console.error('[QueueContext] Failed to fetch dashboard stats:', err);
+    } finally {
+      setLoadingStats(false);
+    }
+  }, []);
+
+  const createClinic = useCallback(async (name, description) => {
+    try {
+      await api.post('/clinic/create', { name, description });
+      await fetchClinics();
+    } catch (err) {
+      console.error('[QueueContext] Failed to create clinic:', err);
+      throw err;
+    }
+  }, [fetchClinics]);
+
+  // ─────────────────────────────────────────────
   //  Admin Appointment CRUD
   // ─────────────────────────────────────────────
 
@@ -473,6 +503,11 @@ export function QueueProvider({ children }) {
         getEstimatedWait,
         getPosition,
         refetchClinics: fetchClinics,
+        // Dashboard
+        dashboardStats,
+        loadingStats,
+        fetchDashboardStats,
+        createClinic,
         // Admin appointment management
         adminAppointments,
         loadingAdminAppointments,

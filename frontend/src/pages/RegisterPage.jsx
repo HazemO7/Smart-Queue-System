@@ -3,11 +3,12 @@ import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from 'react-b
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { FiUser, FiPhone, FiLock, FiUserPlus } from 'react-icons/fi';
+import { FiUser, FiPhone, FiLock, FiUserPlus, FiMail } from 'react-icons/fi';
 
 function RegisterPage() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { register, isLoading, error, clearError } = useAuth();
   const { t } = useLanguage();
@@ -23,7 +24,7 @@ function RegisterPage() {
     }
 
     try {
-      await register(name, phone, password);
+      await register(name, phone, email, password);
       navigate('/clinics');
     } catch {
       // Error is already set in AuthContext
@@ -79,6 +80,23 @@ function RegisterPage() {
                         size="lg"
                         disabled={isLoading}
                         autoComplete="tel"
+                      />
+                    </div>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label className="form-label-lg">{t('emailAddress')}</Form.Label>
+                    <div className="input-icon-wrapper">
+                      <FiMail className="input-icon" size={20} />
+                      <Form.Control
+                        type="email"
+                        placeholder={t('emailPlaceholder')}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="form-control-lg input-with-icon"
+                        size="lg"
+                        disabled={isLoading}
+                        autoComplete="email"
                       />
                     </div>
                   </Form.Group>
