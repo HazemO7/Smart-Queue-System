@@ -1,3 +1,5 @@
+
+
 <div align="center">
 
 <img src="https://img.shields.io/badge/Smart%20Queue%20System-1.0.0-4A90D9?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQxIDAtOC0zLjU5LTgtOHMzLjU5LTggOC04IDggMy41OSA4IDgtMy41OSA4LTggOHptLjUtMTNINXYyaDV2NWgyVjdoMC41eiIvPjwvc3ZnPg==" alt="Smart Queue System"/>
@@ -416,3 +418,7 @@ Capstone Project · Second Semester · 2026
 **© 2026 Smart Queue System. All rights reserved.**
 
 </div>
+
+📝 License
+This project was built as a Capstone Engineering Project.
+
