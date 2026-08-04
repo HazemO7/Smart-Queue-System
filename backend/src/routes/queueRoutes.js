@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { startShift, getActiveQueues, closeShift, callNext } = require('../controllers/queueController');
+const { startShift, getActiveQueues, closeShift, callNext, pauseShift, resumeShift } = require('../controllers/queueController');
 const { verifyToken, isAdmin } = require('../middlewares/authMiddleware');
 const errorHandler = require('../middlewares/errorMiddleware');
 
@@ -15,5 +15,11 @@ router.patch('/next/:queueId', verifyToken, isAdmin, callNext, errorHandler);
 
 // PATCH /api/queue/close/:queueId — Admin closes a queue (end of shift)
 router.patch('/close/:queueId', verifyToken, isAdmin, closeShift, errorHandler);
+
+// PATCH /api/queue/pause/:queueId — Admin pauses an open queue
+router.patch('/pause/:queueId', verifyToken, isAdmin, pauseShift, errorHandler);
+
+// PATCH /api/queue/resume/:queueId — Admin resumes a paused queue
+router.patch('/resume/:queueId', verifyToken, isAdmin, resumeShift, errorHandler);
 
 module.exports = router;

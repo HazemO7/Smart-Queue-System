@@ -120,6 +120,27 @@ const translations = {
     hoursAgo: 'h ago',
     emailAddress: 'Email Address',
     emailPlaceholder: 'Enter your email (optional)',
+
+    // Phase 9 & Enhanced Queue States
+    queuePaused: 'Queue Paused',
+    queuePausedDesc: 'The queue is temporarily paused. Your position is preserved and wait estimation will resume shortly.',
+    queueClosed: 'Queue Closed',
+    queueClosedDesc: 'The clinic shift has closed for today.',
+    queueNotStarted: "Queue Hasn't Started Yet",
+    queueNotStartedDesc: 'The queue for this clinic will open soon. Your ticket is confirmed.',
+    futureQueueTitle: 'Queue Information Not Available Yet',
+    futureQueueDesc: 'Queue information will become available on your appointment day.',
+    anyMomentNow: 'Any moment now...',
+    pauseQueue: 'Pause Shift',
+    resumeQueue: 'Resume Shift',
+    pause: 'Pause',
+    resume: 'Resume',
+    noClinics: 'No Clinics Available',
+    noClinicsDesc: 'Please check back later for available clinics and appointment scheduling.',
+    today: 'Today',
+    tomorrow: 'Tomorrow',
+    pending: 'Pending',
+    remaining: 'remaining',
   },
   ar: {
     // Navbar
@@ -238,6 +259,27 @@ const translations = {
     hoursAgo: 'ساعة مضت',
     emailAddress: 'البريد الإلكتروني',
     emailPlaceholder: 'أدخل بريدك الإلكتروني (اختياري)',
+
+    // Phase 9 & Enhanced Queue States
+    queuePaused: 'الطابور متوقف مؤقتاً',
+    queuePausedDesc: 'تم إيقاف الطابور مؤقتاً. تم حفظ ترتيبك وسيتم استئناف تقدير وقت الانتظار قريباً.',
+    queueClosed: 'الطابور مغلق',
+    queueClosedDesc: 'انتهت فترة عمل العيادة لهذا اليوم.',
+    queueNotStarted: 'لم يبدأ الطابور بعد',
+    queueNotStartedDesc: 'سيتم فتح الطابور لهذه العيادة قريباً. حجز تذكرتك مؤكد.',
+    futureQueueTitle: 'معلومات الطابور غير متاحة بعد',
+    futureQueueDesc: 'ستكون معلومات الطابور متاحة في يوم موعدك.',
+    anyMomentNow: 'في أي لحظة الآن...',
+    pauseQueue: 'إيقاف مؤقت',
+    resumeQueue: 'استئناف الطابور',
+    pause: 'إيقاف مؤقت',
+    resume: 'استئناف',
+    noClinics: 'لا توجد عيادات متاحة',
+    noClinicsDesc: 'يرجى المحاولة لاحقاً للاطلاع على العيادات المتاحة وحجز المواعيد.',
+    today: 'اليوم',
+    tomorrow: 'غداً',
+    pending: 'قيد الانتظار',
+    remaining: 'متبقية',
   }
 };
 

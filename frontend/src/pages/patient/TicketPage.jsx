@@ -1,20 +1,41 @@
 import { useEffect, useState } from 'react';
-import { Container, Row, Col, Card, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Card, Badge, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useQueue } from '../../context/QueueContext';
-import { FiClock, FiUsers, FiHash, FiCalendar } from 'react-icons/fi';
+import { FiClock, FiUsers, FiHash, FiCalendar, FiPauseCircle, FiAlertCircle } from 'react-icons/fi';
 
 function TicketPage() {
   const { t, lang } = useLanguage();
-  const { patientTicket, getClinic, getEstimatedWait, getPosition } = useQueue();
+  const { patientTicket, getClinic, getEstimatedWait, getPosition, getQueueState } = useQueue();
   const navigate = useNavigate();
   const [pulse, setPulse] = useState(false);
 
   const clinic = patientTicket ? getClinic(patientTicket.clinicId) : null;
   const position = patientTicket ? getPosition(patientTicket.clinicId, patientTicket.ticketNumber) : 0;
-  const waitTime = patientTicket ? getEstimatedWait(patientTicket.clinicId, patientTicket.ticketNumber) : 0;
+  const rawWaitTime = patientTicket ? getEstimatedWait(patientTicket.clinicId, patientTicket.ticketNumber) : null;
+  const queueState = patientTicket ? getQueueState(patientTicket.clinicId) : 'not-started';
   
+  // Live countdown state synced to backend estimated wait time
+  const [countdownSeconds, setCountdownSeconds] = useState(null);
+
+  // When backend sends a new estimate (rawWaitTime changes) or queue state updates, synchronize countdown
+  useEffect(() => {
+    if (rawWaitTime !== null && rawWaitTime !== undefined && queueState === 'open' && position > 0) {
+      setCountdownSeconds(Math.round(rawWaitTime * 60));
+    } else {
+      setCountdownSeconds(null);
+    }
+  }, [rawWaitTime, queueState, position]);
+
+  // Per-second countdown decrement
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdownSeconds((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Date logic
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -46,14 +67,36 @@ function TicketPage() {
     }
   }
 
-  const isYourTurn = !isFuture && position <= 1 && clinic;
-  const currentServing = clinic?.currentServing || 0;
+  const isYourTurn = !isFuture && (queueState === 'your-turn' || position === 0) && clinic && queueState !== 'paused' && queueState !== 'closed';
+  const currentServing = clinic?.currentServing || patientTicket?.currentServingNumber || 0;
 
-  // Calculate progress for the ring (0-100)
-  const maxWait = 60; // max 60 minutes for full ring
-  const progress = Math.max(0, Math.min(100, ((maxWait - waitTime) / maxWait) * 100));
+  // Calculate progress for the ring (0-100) using seconds for smoother transitions
+  const maxWaitSeconds = 60 * 60; // max 60 minutes for full ring
+  const currentWaitSeconds = countdownSeconds !== null ? countdownSeconds : (rawWaitTime ? rawWaitTime * 60 : 0);
+  const progress = Math.max(0, Math.min(100, ((maxWaitSeconds - currentWaitSeconds) / maxWaitSeconds) * 100));
   const circumference = 2 * Math.PI * 54; // radius 54
   const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  const formatWaitDisplay = () => {
+    if (isYourTurn || position === 0) {
+      return '0:00';
+    }
+    if (queueState === 'paused' || queueState === 'closed' || queueState === 'not-started') {
+      return '—';
+    }
+    if (countdownSeconds !== null) {
+      if (countdownSeconds === 0) return t('anyMomentNow') || 'Any moment now...';
+      const mins = Math.floor(countdownSeconds / 60);
+      const secs = countdownSeconds % 60;
+      if (mins > 60) {
+        const hrs = Math.floor(mins / 60);
+        const remMins = mins % 60;
+        return `${hrs}h ${remMins}m`;
+      }
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    return rawWaitTime !== null && rawWaitTime !== undefined ? `${rawWaitTime}m` : '—';
+  };
 
   // Pulse animation when turn changes
   useEffect(() => {
@@ -83,9 +126,9 @@ function TicketPage() {
           <Col xs={12} md={8} lg={6}>
             {/* Clinic Name */}
             <div className="text-center mb-3">
-              <span className="ticket-clinic-icon">{clinic?.icon}</span>
+              <span className="ticket-clinic-icon">{clinic?.icon || '🏥'}</span>
               <h2 className="ticket-clinic-name">
-                {lang === 'ar' ? clinic?.nameAr || patientTicket.clinicNameAr : clinic?.name || patientTicket.clinicName}
+                {lang === 'ar' ? clinic?.nameAr || patientTicket.clinicName : clinic?.name || patientTicket.clinicName}
               </h2>
             </div>
 
@@ -102,17 +145,21 @@ function TicketPage() {
                   {patientTicket.ticketNumber}
                 </div>
                 <Badge
-                  bg={isYourTurn ? 'success' : 'primary'}
-                  className="ticket-status-badge px-4 py-2 rounded-pill fs-6 mt-2"
+                  bg={isYourTurn ? 'success' : queueState === 'paused' ? 'warning' : 'primary'}
+                  className={`ticket-status-badge px-4 py-2 rounded-pill fs-6 mt-2 ${queueState === 'paused' ? 'text-dark' : ''}`}
                 >
-                  {isYourTurn ? t('yourTurn') : (patientTicket.status === 'Pending' ? t('pending') || 'Pending' : t('waiting'))}
+                  {isYourTurn 
+                    ? t('yourTurn') 
+                    : queueState === 'paused' 
+                      ? t('queuePaused') || 'Paused'
+                      : (patientTicket.status === 'Pending' ? t('pending') || 'Pending' : t('waiting'))}
                 </Badge>
                 {isYourTurn && (
                   <p className="text-success fw-semibold mt-3 mb-0 fs-5">
                     {t('goToCounter')}
                   </p>
                 )}
-                {!isYourTurn && !isFuture && (
+                {!isYourTurn && !isFuture && queueState === 'open' && (
                   <p className="text-muted mt-3 mb-0">
                     {t('pleaseWait')}
                   </p>
@@ -120,87 +167,125 @@ function TicketPage() {
               </Card.Body>
             </Card>
 
-            {/* Info Cards Row - Hidden if future booking */}
+            {/* Queue State Alerts or Info Cards */}
             {!isFuture ? (
-              <Row className="g-3">
-                {/* Now Serving */}
-                <Col xs={12}>
-                  <Card className="info-card border-0 shadow-sm">
-                    <Card.Body className="p-3 d-flex align-items-center justify-content-between">
-                      <div className="d-flex align-items-center gap-3">
-                        <div className="info-card-icon bg-primary-subtle">
-                          <FiHash size={20} className="text-primary" />
-                        </div>
-                        <div>
-                          <div className="text-muted small">{t('nowServing')}</div>
-                          <div className="fw-bold fs-4">{currentServing}</div>
-                        </div>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
+              <>
+                {queueState === 'paused' && (
+                  <Alert variant="warning" className="d-flex align-items-center gap-3 shadow-sm border-0 mb-4">
+                    <FiPauseCircle size={28} className="text-warning flex-shrink-0" />
+                    <div>
+                      <h6 className="mb-1 fw-bold">{t('queuePaused') || 'Queue Paused'}</h6>
+                      <p className="mb-0 small">
+                        {t('queuePausedDesc') || 'The queue is temporarily stopped. Your position is preserved, and waiting time estimation will resume when the clinic continues.'}
+                      </p>
+                    </div>
+                  </Alert>
+                )}
 
-                {/* Position in Queue */}
-                <Col xs={6}>
-                  <Card className="info-card border-0 shadow-sm">
-                    <Card.Body className="p-3 text-center">
-                      <div className="info-card-icon-sm bg-info-subtle mx-auto mb-2">
-                        <FiUsers size={18} className="text-info" />
-                      </div>
-                      <div className="text-muted small">{t('position')}</div>
-                      <div className="fw-bold fs-4">{position}</div>
-                      <div className="text-muted small">{t('inQueue')}</div>
-                    </Card.Body>
-                  </Card>
-                </Col>
+                {queueState === 'closed' && (
+                  <Alert variant="danger" className="d-flex align-items-center gap-3 shadow-sm border-0 mb-4">
+                    <FiAlertCircle size={28} className="text-danger flex-shrink-0" />
+                    <div>
+                      <h6 className="mb-1 fw-bold">{t('queueClosed') || 'Queue Closed'}</h6>
+                      <p className="mb-0 small">
+                        {t('queueClosedDesc') || 'The clinic shift has closed for today.'}
+                      </p>
+                    </div>
+                  </Alert>
+                )}
 
-                {/* Estimated Wait with Progress Ring */}
-                <Col xs={6}>
-                  <Card className="info-card border-0 shadow-sm">
-                    <Card.Body className="p-3 text-center">
-                      <div className="progress-ring-container mx-auto mb-2">
-                        <svg className="progress-ring" width="64" height="64">
-                          <circle
-                            className="progress-ring-bg"
-                            cx="32"
-                            cy="32"
-                            r="27"
-                            fill="none"
-                            stroke="#e8f4fd"
-                            strokeWidth="5"
-                          />
-                          <circle
-                            className="progress-ring-fill"
-                            cx="32"
-                            cy="32"
-                            r="27"
-                            fill="none"
-                            stroke="#4A90D9"
-                            strokeWidth="5"
-                            strokeLinecap="round"
-                            strokeDasharray={2 * Math.PI * 27}
-                            strokeDashoffset={2 * Math.PI * 27 - (progress / 100) * 2 * Math.PI * 27}
-                            transform="rotate(-90 32 32)"
-                          />
-                        </svg>
-                        <div className="progress-ring-text">
-                          <FiClock size={16} className="text-primary" />
-                        </div>
-                      </div>
-                      <div className="text-muted small">{t('estimatedWaitTime')}</div>
-                      <div className="fw-bold fs-4">{waitTime}</div>
-                      <div className="text-muted small">{t('minutes')}</div>
+                {queueState === 'not-started' ? (
+                  <Card className="info-card border-0 shadow-sm text-center">
+                    <Card.Body className="p-4">
+                      <FiClock size={32} className="text-muted mb-3" />
+                      <h5 className="mb-2">{t('queueNotStarted') || "Queue Hasn't Started Yet"}</h5>
+                      <p className="text-muted mb-0">
+                        {t('queueNotStartedDesc') || 'The queue for this clinic will open soon. Your ticket is confirmed.'}
+                      </p>
                     </Card.Body>
                   </Card>
-                </Col>
-              </Row>
+                ) : (
+                  <Row className="g-3">
+                    {/* Now Serving */}
+                    <Col xs={12}>
+                      <Card className="info-card border-0 shadow-sm">
+                        <Card.Body className="p-3 d-flex align-items-center justify-content-between">
+                          <div className="d-flex align-items-center gap-3">
+                            <div className="info-card-icon bg-primary-subtle">
+                              <FiHash size={20} className="text-primary" />
+                            </div>
+                            <div>
+                              <div className="text-muted small">{t('nowServing')}</div>
+                              <div className="fw-bold fs-4">{currentServing || '—'}</div>
+                            </div>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+
+                    {/* Position in Queue */}
+                    <Col xs={6}>
+                      <Card className="info-card border-0 shadow-sm">
+                        <Card.Body className="p-3 text-center">
+                          <div className="info-card-icon-sm bg-info-subtle mx-auto mb-2">
+                            <FiUsers size={18} className="text-info" />
+                          </div>
+                          <div className="text-muted small">{t('position')}</div>
+                          <div className="fw-bold fs-4">{queueState === 'closed' ? '—' : position}</div>
+                          <div className="text-muted small">{t('inQueue')}</div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+
+                    {/* Estimated Wait with Progress Ring */}
+                    <Col xs={6}>
+                      <Card className="info-card border-0 shadow-sm">
+                        <Card.Body className="p-3 text-center">
+                          <div className="progress-ring-container mx-auto mb-2">
+                            <svg className="progress-ring" width="64" height="64">
+                              <circle
+                                className="progress-ring-bg"
+                                cx="32"
+                                cy="32"
+                                r="27"
+                                fill="none"
+                                stroke="#e8f4fd"
+                                strokeWidth="5"
+                              />
+                              <circle
+                                className="progress-ring-fill"
+                                cx="32"
+                                cy="32"
+                                r="27"
+                                fill="none"
+                                stroke="#4A90D9"
+                                strokeWidth="5"
+                                strokeLinecap="round"
+                                strokeDasharray={2 * Math.PI * 27}
+                                strokeDashoffset={strokeDashoffset}
+                                transform="rotate(-90 32 32)"
+                              />
+                            </svg>
+                            <div className="progress-ring-text">
+                              <FiClock size={16} className="text-primary" />
+                            </div>
+                          </div>
+                          <div className="text-muted small">{t('estimatedWaitTime')}</div>
+                          <div className="fw-bold fs-4">{formatWaitDisplay()}</div>
+                          <div className="text-muted small">{t('minutes')}</div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  </Row>
+                )}
+              </>
             ) : (
               <Card className="info-card border-0 shadow-sm text-center">
                 <Card.Body className="p-4">
                   <FiClock size={32} className="text-muted mb-3" />
-                  <h5 className="mb-2">Queue Information Not Available Yet</h5>
+                  <h5 className="mb-2">{t('futureQueueTitle') || 'Queue Information Not Available Yet'}</h5>
                   <p className="text-muted mb-0">
-                    Queue information will become available on your appointment day.
+                    {t('futureQueueDesc') || 'Queue information will become available on your appointment day.'}
                   </p>
                 </Card.Body>
               </Card>

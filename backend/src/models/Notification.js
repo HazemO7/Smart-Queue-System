@@ -16,7 +16,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['your-turn', 'booking-confirmed', 'queue-started', 'queue-closed'],
+      enum: ['your-turn', 'booking-confirmed', 'queue-started', 'queue-closed', 'queue-paused', 'queue-resumed', 'approaching-turn'],
       required: true,
     },
     title: {

@@ -140,26 +140,43 @@ function BookingPage() {
               <p className="text-muted">{t('bookingTitle')}</p>
             </div>
 
+
+            {/* 
+              Info card logic:
+              - BEFORE booking: show total clinic stats (how busy is it right now)
+              - AFTER booking:  show THIS patient's personal position from the backend
+            */}
             <Card className="booking-info-card border-0 shadow-sm mb-4">
               <Card.Body className="p-4">
                 <Row className="g-3 text-center">
                   <Col xs={6}>
                     <div className="info-stat">
                       <FiUsers size={24} className="text-primary mb-2" />
-                      <div className="stat-value">{clinic.queue.length}</div>
-                      <div className="stat-label text-muted small">{t('waitingPatients')}</div>
+                      <div className="stat-value">
+                        {booked
+                          ? (patientTicket?.position ?? 0)          // people AHEAD of this patient
+                          : clinic.queue.length}                     // total in clinic right now
+                      </div>
+                      <div className="stat-label text-muted small">
+                        {booked ? t('peopleAhead') || 'People Ahead' : t('waitingPatients')}
+                      </div>
                     </div>
                   </Col>
                   <Col xs={6}>
                     <div className="info-stat">
                       <FiClock size={24} className="text-primary mb-2" />
-                      <div className="stat-value">{estimatedWait} {t('minutes')}</div>
+                      <div className="stat-value">
+                        {booked
+                          ? `${patientTicket?.estimatedWaitMinutes ?? 0} ${t('minutes')}`
+                          : `${estimatedWait} ${t('minutes')}`}
+                      </div>
                       <div className="stat-label text-muted small">{t('estWaitTime')}</div>
                     </div>
                   </Col>
                 </Row>
               </Card.Body>
             </Card>
+
 
             {!booked ? (
               <div className="booking-form-section">

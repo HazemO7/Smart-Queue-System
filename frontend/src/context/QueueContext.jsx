@@ -10,6 +10,10 @@ const QueueContext = createContext();
  * Adds default values for fields not stored in the backend (icon, hours, etc.).
  */
 function mapClinicToFrontend(backendClinic) {
+  const queueStatus = backendClinic.queue?.status || null;
+  const isOpen = queueStatus === 'Open';
+  const queueState = queueStatus === 'Open' ? 'open' : (queueStatus === 'Paused' ? 'paused' : (queueStatus === 'Closed' ? 'closed' : 'not-started'));
+
   return {
     id: backendClinic._id,
     name: backendClinic.name,
@@ -19,7 +23,8 @@ function mapClinicToFrontend(backendClinic) {
     icon: '🏥',
     hours: '—',
     hoursAr: '—',
-    isOpen: !!backendClinic.queue && backendClinic.queue.status === 'Open',
+    isOpen,
+    queueState,
     currentServing: backendClinic.queue?.currentServingNumber || 0,
     nextTicket: backendClinic.nextTicketNumber || 1,
     queue: (backendClinic.waitingTickets || []).map((t) => ({
@@ -99,9 +104,9 @@ export function QueueProvider({ children }) {
       const tickets = res.data?.data?.tickets || [];
       if (tickets.length > 0) {
         const t = tickets[0]; // Most relevant active ticket
-        // Normalize populated fields back to string IDs to match the raw ticket format
         const ticket = {
           ...t,
+          clinicName: t.clinicName || t.clinicId?.name || '',
           clinicId: t.clinicId?._id || t.clinicId,
           queueId: t.queueId?._id || t.queueId
         };
@@ -118,18 +123,31 @@ export function QueueProvider({ children }) {
   }, [fetchMyTicket]);
 
   // ─────────────────────────────────────────────
-  //  Socket event listeners
+  //  Room joining — runs when clinics list changes
+  //  (separate from listeners to avoid listener churn)
   // ─────────────────────────────────────────────
   useEffect(() => {
     if (!socket || !isConnected) return;
-
-    // Join all clinic rooms so we receive updates
     clinics.forEach((clinic) => {
       if (!joinedRooms.current.has(clinic.id)) {
         socket.emit('join:clinic', clinic.id);
         joinedRooms.current.add(clinic.id);
       }
     });
+  }, [socket, isConnected, clinics]);
+
+  // ─────────────────────────────────────────────
+  //  Socket event listeners
+  //  Intentionally depends ONLY on socket/isConnected —
+  //  NOT on clinics. All handlers use functional state
+  //  updaters (prev =>) so they never need to close over
+  //  stale state. This prevents the listeners from being
+  //  torn-down & re-registered on every clinic update,
+  //  which was causing queue:update events to be dropped
+  //  during the teardown window.
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!socket || !isConnected) return;
 
     // Handler: Admin started a shift (queue opened, tickets activated)
     const handleQueueStarted = (data) => {
@@ -139,15 +157,18 @@ export function QueueProvider({ children }) {
           return {
             ...clinic,
             isOpen: true,
+            queueState: 'open',
             currentServing: data.queue?.currentServingNumber || 0,
             queueId: data.queue?._id || null,
           };
         })
       );
-      // If patient has a pending ticket for this clinic, it's now live
+      // If patient has a pending ticket for this clinic, it's now live.
+      // Position/estimatedWait will arrive via the queue:update that
+      // startShift emits immediately after.
       setPatientTicket((prev) => {
         if (!prev || prev.clinicId !== data.clinicId) return prev;
-        const updated = { ...prev, status: 'Live' };
+        const updated = { ...prev, status: 'Live', queueState: 'open' };
         sessionStorage.setItem('sq-ticket', JSON.stringify(updated));
         return updated;
       });
@@ -161,6 +182,7 @@ export function QueueProvider({ children }) {
           return {
             ...clinic,
             isOpen: false,
+            queueState: 'closed',
             currentServing: 0,
             queue: [],
             queueId: null,
@@ -190,7 +212,8 @@ export function QueueProvider({ children }) {
           };
         })
       );
-      // Update patient ticket — check if they're being served
+      // Mark the served patient's ticket. All remaining patients' positions
+      // are updated individually via the queue:update event that callNext emits.
       setPatientTicket((prev) => {
         if (!prev || prev.clinicId !== data.clinicId) return prev;
         if (prev.ticketNumber === data.servedTicket?.ticketNumber) {
@@ -231,19 +254,98 @@ export function QueueProvider({ children }) {
       );
     };
 
+    const handleQueuePaused = (data) => {
+      setClinics((prev) =>
+        prev.map((clinic) => {
+          if (clinic.id !== data.clinicId) return clinic;
+          return {
+            ...clinic,
+            isOpen: false,
+            queueState: 'paused',
+          };
+        })
+      );
+      setPatientTicket((prev) => {
+        if (!prev || prev.clinicId !== data.clinicId) return prev;
+        const updated = { ...prev, queueState: 'paused', estimatedWaitMinutes: null };
+        sessionStorage.setItem('sq-ticket', JSON.stringify(updated));
+        return updated;
+      });
+    };
+
+    const handleQueueResumed = (data) => {
+      setClinics((prev) =>
+        prev.map((clinic) => {
+          if (clinic.id !== data.clinicId) return clinic;
+          return {
+            ...clinic,
+            isOpen: true,
+            queueState: 'open',
+          };
+        })
+      );
+      setPatientTicket((prev) => {
+        if (!prev || prev.clinicId !== data.clinicId) return prev;
+        const updated = { ...prev, queueState: 'open' };
+        sessionStorage.setItem('sq-ticket', JSON.stringify(updated));
+        return updated;
+      });
+    };
+
+    // Handler: Per-user queue position update.
+    // The backend emits this to each user's personal room (user:${userId})
+    // with values calculated specifically for that ticket. The ticketNumber
+    // guard below ensures a stale event cannot overwrite a different user's data.
+    const handleQueueUpdate = (data) => {
+      setClinics((prev) =>
+        prev.map((clinic) => {
+          if (clinic.id !== data.clinicId) return clinic;
+          return {
+            ...clinic,
+            currentServing: data.currentServingNumber !== undefined ? data.currentServingNumber : clinic.currentServing,
+            queueState: data.queueState === 'open' || data.queueState === 'your-turn'
+              ? 'open'
+              : data.queueState || clinic.queueState,
+            isOpen: data.queueState === 'open' || data.queueState === 'your-turn',
+          };
+        })
+      );
+      setPatientTicket((prev) => {
+        if (!prev || prev.clinicId !== data.clinicId) return prev;
+        // Guard: reject this update if it belongs to a different ticket
+        if (prev.ticketNumber && data.ticketNumber && prev.ticketNumber !== data.ticketNumber) return prev;
+        const updated = {
+          ...prev,
+          position: data.position !== undefined ? data.position : prev.position,
+          estimatedWaitMinutes: data.estimatedWaitMinutes !== undefined ? data.estimatedWaitMinutes : prev.estimatedWaitMinutes,
+          queueState: data.queueState || prev.queueState,
+          currentServingNumber: data.currentServingNumber !== undefined ? data.currentServingNumber : prev.currentServingNumber,
+        };
+        sessionStorage.setItem('sq-ticket', JSON.stringify(updated));
+        return updated;
+      });
+    };
+
     socket.on('queue:started', handleQueueStarted);
     socket.on('queue:closed', handleQueueClosed);
     socket.on('queue:next', handleQueueNext);
     socket.on('ticket:new', handleTicketNew);
+    socket.on('queue:paused', handleQueuePaused);
+    socket.on('queue:resumed', handleQueueResumed);
+    socket.on('queue:update', handleQueueUpdate);
 
-    // Cleanup listeners on unmount or dependency change
+    // Cleanup listeners only when socket itself changes (not on every clinic update)
     return () => {
       socket.off('queue:started', handleQueueStarted);
       socket.off('queue:closed', handleQueueClosed);
       socket.off('queue:next', handleQueueNext);
       socket.off('ticket:new', handleTicketNew);
+      socket.off('queue:paused', handleQueuePaused);
+      socket.off('queue:resumed', handleQueueResumed);
+      socket.off('queue:update', handleQueueUpdate);
     };
-  }, [socket, isConnected, clinics]);
+  }, [socket, isConnected]);
+
 
   // ─────────────────────────────────────────────
   //  Context functions (preserve existing signatures)
@@ -307,9 +409,15 @@ export function QueueProvider({ children }) {
         });
         const newTicket = res.data?.data?.ticket;
         if (newTicket) {
+          // Store the raw ticket immediately so the UI unblocks
           setPatientTicket(newTicket);
           sessionStorage.setItem('sq-ticket', JSON.stringify(newTicket));
           setShowSuccess(true);
+
+          // Then fetch the enriched ticket (with server-calculated position &
+          // estimatedWaitMinutes) so the booking confirmation screen shows the
+          // correct per-user values right away, without waiting for the socket.
+          fetchMyTicket();
         }
       } catch (err) {
         console.error('[QueueContext] Book ticket failed:', err);
@@ -318,7 +426,7 @@ export function QueueProvider({ children }) {
         throw err;
       }
     },
-    [availableAppointments]
+    [availableAppointments, fetchMyTicket]
   );
 
   const callNextPatient = useCallback(
@@ -357,6 +465,32 @@ export function QueueProvider({ children }) {
     [clinics]
   );
 
+  const pauseClinic = useCallback(
+    async (clinicId) => {
+      const clinic = clinics.find((c) => c.id === clinicId);
+      if (!clinic?.queueId) return;
+      try {
+        await api.patch(`/queue/pause/${clinic.queueId}`);
+      } catch (err) {
+        console.error('[QueueContext] Pause clinic failed:', err);
+      }
+    },
+    [clinics]
+  );
+
+  const resumeClinic = useCallback(
+    async (clinicId) => {
+      const clinic = clinics.find((c) => c.id === clinicId);
+      if (!clinic?.queueId) return;
+      try {
+        await api.patch(`/queue/resume/${clinic.queueId}`);
+      } catch (err) {
+        console.error('[QueueContext] Resume clinic failed:', err);
+      }
+    },
+    [clinics]
+  );
+
   const clearTicket = useCallback(() => {
     setPatientTicket(null);
     sessionStorage.removeItem('sq-ticket');
@@ -364,21 +498,55 @@ export function QueueProvider({ children }) {
 
   const getEstimatedWait = useCallback(
     (clinicId, ticketNumber) => {
+      if (patientTicket && patientTicket.clinicId === clinicId && patientTicket.ticketNumber === ticketNumber) {
+        if (patientTicket.estimatedWaitMinutes !== undefined && patientTicket.estimatedWaitMinutes !== null) {
+          return patientTicket.estimatedWaitMinutes;
+        }
+      }
+      // Fallback: estimate from clinic state when backend value is unavailable.
+      // peopleAhead = tickets with lower numbers still waiting.
+      // When no one has been served yet (currentServing=0), use ticketNumber-1.
+      // Once the queue is active, the currently-serving ticket is already at the
+      // counter, so people ahead = ticketNumber - currentServing - 1.
       const clinic = clinics.find((c) => c.id === clinicId);
-      if (!clinic) return 0;
-      const position = ticketNumber - clinic.currentServing;
-      return Math.max(0, position * 7); // ~7 min per patient
+      if (!clinic) return null;
+      const currentServing = clinic.currentServing || 0;
+      const peopleAhead = currentServing === 0
+        ? Math.max(0, ticketNumber - 1)
+        : Math.max(0, ticketNumber - currentServing - 1);
+      return peopleAhead * 7; // ~7 min per patient default
     },
-    [clinics]
+    [clinics, patientTicket]
   );
 
   const getPosition = useCallback(
     (clinicId, ticketNumber) => {
+      if (patientTicket && patientTicket.clinicId === clinicId && patientTicket.ticketNumber === ticketNumber) {
+        if (patientTicket.position !== undefined) {
+          return patientTicket.position;
+        }
+      }
+      // Fallback: estimate from clinic state when backend value is unavailable.
+      // position = number of people AHEAD (0 = you're next).
       const clinic = clinics.find((c) => c.id === clinicId);
       if (!clinic) return 0;
-      return Math.max(0, ticketNumber - clinic.currentServing);
+      const currentServing = clinic.currentServing || 0;
+      return currentServing === 0
+        ? Math.max(0, ticketNumber - 1)
+        : Math.max(0, ticketNumber - currentServing - 1);
     },
-    [clinics]
+    [clinics, patientTicket]
+  );
+
+  const getQueueState = useCallback(
+    (clinicId) => {
+      if (patientTicket && patientTicket.clinicId === clinicId) {
+        return patientTicket.queueState || 'not-started';
+      }
+      const clinic = clinics.find((c) => c.id === clinicId);
+      return clinic?.queueState || 'not-started';
+    },
+    [clinics, patientTicket]
   );
 
   // ─────────────────────────────────────────────
@@ -499,9 +667,12 @@ export function QueueProvider({ children }) {
         bookTicket,
         callNextPatient,
         toggleClinic,
+        pauseClinic,
+        resumeClinic,
         clearTicket,
         getEstimatedWait,
         getPosition,
+        getQueueState,
         refetchClinics: fetchClinics,
         // Dashboard
         dashboardStats,
