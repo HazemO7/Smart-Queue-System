@@ -19,7 +19,7 @@ const queueSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Open', 'Closed'],
+      enum: ['Open', 'Paused', 'Closed'],
       default: 'Open',
     },
     currentServingNumber: {

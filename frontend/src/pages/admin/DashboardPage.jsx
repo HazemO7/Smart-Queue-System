@@ -7,14 +7,14 @@ import { useQueue } from '../../context/QueueContext';
 import {
   FiUsers, FiCheckCircle, FiActivity, FiSettings,
   FiCalendar, FiPlusCircle, FiClock, FiTrendingUp,
-  FiAlertCircle, FiChevronRight, FiHome
+  FiAlertCircle, FiChevronRight, FiHome, FiPause, FiPlay
 } from 'react-icons/fi';
 
 function DashboardPage() {
   const { t, lang } = useLanguage();
   const { user } = useAuth();
   const {
-    clinics, toggleClinic,
+    clinics, toggleClinic, pauseClinic, resumeClinic,
     dashboardStats, loadingStats, fetchDashboardStats,
     createClinic
   } = useQueue();
@@ -257,13 +257,26 @@ function DashboardPage() {
                   </div>
 
                   {/* Status bar */}
-                  <div className="dash-clinic-status mb-3">
-                    <Badge
-                      bg={clinic.isOpen ? 'success' : 'secondary'}
-                      className="px-3 py-2 rounded-pill"
-                    >
-                      {clinic.isOpen ? t('open') : t('closed')}
-                    </Badge>
+                  <div className="dash-clinic-status mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                      <Badge
+                        bg={clinic.isOpen ? 'success' : clinic.queueState === 'paused' ? 'warning' : 'secondary'}
+                        className={`px-3 py-2 rounded-pill ${clinic.queueState === 'paused' ? 'text-dark' : ''}`}
+                      >
+                        {clinic.isOpen ? t('open') : clinic.queueState === 'paused' ? t('queuePaused') || 'Paused' : t('closed')}
+                      </Badge>
+                      {clinic.queueId && (
+                        clinic.queueState === 'paused' ? (
+                          <Button variant="outline-success" size="sm" className="rounded-pill d-flex align-items-center gap-1 py-1" onClick={() => resumeClinic(clinic.id)}>
+                            <FiPlay size={14} /> {t('resumeQueue') || 'Resume'}
+                          </Button>
+                        ) : clinic.isOpen ? (
+                          <Button variant="outline-warning" size="sm" className="rounded-pill d-flex align-items-center gap-1 text-dark py-1" onClick={() => pauseClinic(clinic.id)}>
+                            <FiPause size={14} /> {t('pauseQueue') || 'Pause'}
+                          </Button>
+                        ) : null
+                      )}
+                    </div>
                     {clinic.isOpen && (
                       <span className="dash-serving-badge">
                         Now Serving: <strong>#{clinic.currentServing}</strong>

@@ -10,6 +10,10 @@ const QueueContext = createContext();
  * Adds default values for fields not stored in the backend (icon, hours, etc.).
  */
 function mapClinicToFrontend(backendClinic) {
+  const queueStatus = backendClinic.queue?.status || null;
+  const isOpen = queueStatus === 'Open';
+  const queueState = queueStatus === 'Open' ? 'open' : (queueStatus === 'Paused' ? 'paused' : (queueStatus === 'Closed' ? 'closed' : 'not-started'));
+
   return {
     id: backendClinic._id,
     name: backendClinic.name,
@@ -19,7 +23,8 @@ function mapClinicToFrontend(backendClinic) {
     icon: '🏥',
     hours: '—',
     hoursAr: '—',
-    isOpen: !!backendClinic.queue && backendClinic.queue.status === 'Open',
+    isOpen,
+    queueState,
     currentServing: backendClinic.queue?.currentServingNumber || 0,
     nextTicket: backendClinic.nextTicketNumber || 1,
     queue: (backendClinic.waitingTickets || []).map((t) => ({
@@ -99,9 +104,9 @@ export function QueueProvider({ children }) {
       const tickets = res.data?.data?.tickets || [];
       if (tickets.length > 0) {
         const t = tickets[0]; // Most relevant active ticket
-        // Normalize populated fields back to string IDs to match the raw ticket format
         const ticket = {
           ...t,
+          clinicName: t.clinicName || t.clinicId?.name || '',
           clinicId: t.clinicId?._id || t.clinicId,
           queueId: t.queueId?._id || t.queueId
         };
@@ -139,6 +144,7 @@ export function QueueProvider({ children }) {
           return {
             ...clinic,
             isOpen: true,
+            queueState: 'open',
             currentServing: data.queue?.currentServingNumber || 0,
             queueId: data.queue?._id || null,
           };
@@ -147,7 +153,7 @@ export function QueueProvider({ children }) {
       // If patient has a pending ticket for this clinic, it's now live
       setPatientTicket((prev) => {
         if (!prev || prev.clinicId !== data.clinicId) return prev;
-        const updated = { ...prev, status: 'Live' };
+        const updated = { ...prev, status: 'Live', queueState: 'open' };
         sessionStorage.setItem('sq-ticket', JSON.stringify(updated));
         return updated;
       });
@@ -161,6 +167,7 @@ export function QueueProvider({ children }) {
           return {
             ...clinic,
             isOpen: false,
+            queueState: 'closed',
             currentServing: 0,
             queue: [],
             queueId: null,
@@ -231,10 +238,78 @@ export function QueueProvider({ children }) {
       );
     };
 
+    const handleQueuePaused = (data) => {
+      setClinics((prev) =>
+        prev.map((clinic) => {
+          if (clinic.id !== data.clinicId) return clinic;
+          return {
+            ...clinic,
+            isOpen: false,
+            queueState: 'paused',
+          };
+        })
+      );
+      setPatientTicket((prev) => {
+        if (!prev || prev.clinicId !== data.clinicId) return prev;
+        const updated = { ...prev, queueState: 'paused', estimatedWaitMinutes: null };
+        sessionStorage.setItem('sq-ticket', JSON.stringify(updated));
+        return updated;
+      });
+    };
+
+    const handleQueueResumed = (data) => {
+      setClinics((prev) =>
+        prev.map((clinic) => {
+          if (clinic.id !== data.clinicId) return clinic;
+          return {
+            ...clinic,
+            isOpen: true,
+            queueState: 'open',
+          };
+        })
+      );
+      setPatientTicket((prev) => {
+        if (!prev || prev.clinicId !== data.clinicId) return prev;
+        const updated = { ...prev, queueState: 'open' };
+        sessionStorage.setItem('sq-ticket', JSON.stringify(updated));
+        return updated;
+      });
+    };
+
+    const handleQueueUpdate = (data) => {
+      setClinics((prev) =>
+        prev.map((clinic) => {
+          if (clinic.id !== data.clinicId) return clinic;
+          return {
+            ...clinic,
+            currentServing: data.currentServingNumber !== undefined ? data.currentServingNumber : clinic.currentServing,
+            queueState: data.queueState || clinic.queueState,
+            isOpen: data.queueState === 'open',
+          };
+        })
+      );
+      setPatientTicket((prev) => {
+        if (!prev || prev.clinicId !== data.clinicId) return prev;
+        if (prev.ticketNumber && data.ticketNumber && prev.ticketNumber !== data.ticketNumber) return prev;
+        const updated = {
+          ...prev,
+          position: data.position !== undefined ? data.position : prev.position,
+          estimatedWaitMinutes: data.estimatedWaitMinutes !== undefined ? data.estimatedWaitMinutes : prev.estimatedWaitMinutes,
+          queueState: data.queueState || prev.queueState,
+          currentServingNumber: data.currentServingNumber !== undefined ? data.currentServingNumber : prev.currentServingNumber,
+        };
+        sessionStorage.setItem('sq-ticket', JSON.stringify(updated));
+        return updated;
+      });
+    };
+
     socket.on('queue:started', handleQueueStarted);
     socket.on('queue:closed', handleQueueClosed);
     socket.on('queue:next', handleQueueNext);
     socket.on('ticket:new', handleTicketNew);
+    socket.on('queue:paused', handleQueuePaused);
+    socket.on('queue:resumed', handleQueueResumed);
+    socket.on('queue:update', handleQueueUpdate);
 
     // Cleanup listeners on unmount or dependency change
     return () => {
@@ -242,6 +317,9 @@ export function QueueProvider({ children }) {
       socket.off('queue:closed', handleQueueClosed);
       socket.off('queue:next', handleQueueNext);
       socket.off('ticket:new', handleTicketNew);
+      socket.off('queue:paused', handleQueuePaused);
+      socket.off('queue:resumed', handleQueueResumed);
+      socket.off('queue:update', handleQueueUpdate);
     };
   }, [socket, isConnected, clinics]);
 
@@ -357,6 +435,32 @@ export function QueueProvider({ children }) {
     [clinics]
   );
 
+  const pauseClinic = useCallback(
+    async (clinicId) => {
+      const clinic = clinics.find((c) => c.id === clinicId);
+      if (!clinic?.queueId) return;
+      try {
+        await api.patch(`/queue/pause/${clinic.queueId}`);
+      } catch (err) {
+        console.error('[QueueContext] Pause clinic failed:', err);
+      }
+    },
+    [clinics]
+  );
+
+  const resumeClinic = useCallback(
+    async (clinicId) => {
+      const clinic = clinics.find((c) => c.id === clinicId);
+      if (!clinic?.queueId) return;
+      try {
+        await api.patch(`/queue/resume/${clinic.queueId}`);
+      } catch (err) {
+        console.error('[QueueContext] Resume clinic failed:', err);
+      }
+    },
+    [clinics]
+  );
+
   const clearTicket = useCallback(() => {
     setPatientTicket(null);
     sessionStorage.removeItem('sq-ticket');
@@ -364,21 +468,42 @@ export function QueueProvider({ children }) {
 
   const getEstimatedWait = useCallback(
     (clinicId, ticketNumber) => {
+      if (patientTicket && patientTicket.clinicId === clinicId && patientTicket.ticketNumber === ticketNumber) {
+        if (patientTicket.estimatedWaitMinutes !== undefined && patientTicket.estimatedWaitMinutes !== null) {
+          return patientTicket.estimatedWaitMinutes;
+        }
+      }
       const clinic = clinics.find((c) => c.id === clinicId);
       if (!clinic) return 0;
       const position = ticketNumber - clinic.currentServing;
       return Math.max(0, position * 7); // ~7 min per patient
     },
-    [clinics]
+    [clinics, patientTicket]
   );
 
   const getPosition = useCallback(
     (clinicId, ticketNumber) => {
+      if (patientTicket && patientTicket.clinicId === clinicId && patientTicket.ticketNumber === ticketNumber) {
+        if (patientTicket.position !== undefined) {
+          return patientTicket.position;
+        }
+      }
       const clinic = clinics.find((c) => c.id === clinicId);
       if (!clinic) return 0;
       return Math.max(0, ticketNumber - clinic.currentServing);
     },
-    [clinics]
+    [clinics, patientTicket]
+  );
+
+  const getQueueState = useCallback(
+    (clinicId) => {
+      if (patientTicket && patientTicket.clinicId === clinicId) {
+        return patientTicket.queueState || 'not-started';
+      }
+      const clinic = clinics.find((c) => c.id === clinicId);
+      return clinic?.queueState || 'not-started';
+    },
+    [clinics, patientTicket]
   );
 
   // ─────────────────────────────────────────────
@@ -499,9 +624,12 @@ export function QueueProvider({ children }) {
         bookTicket,
         callNextPatient,
         toggleClinic,
+        pauseClinic,
+        resumeClinic,
         clearTicket,
         getEstimatedWait,
         getPosition,
+        getQueueState,
         refetchClinics: fetchClinics,
         // Dashboard
         dashboardStats,
