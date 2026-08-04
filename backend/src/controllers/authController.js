@@ -19,7 +19,7 @@ const register = async (req, res, next) => {
     }
 
     // get Data
-    const { name, phone, password, role } = value;
+    const { name, phone, password, role, email } = value;
     // Validated Data
     if (!name || !phone || !password)
       return res.status(400).json({ msg: "Missing Data" });
@@ -33,13 +33,14 @@ const register = async (req, res, next) => {
     const user = await User.create({
       name,
       phone,
+      email,
       password: hashPassword,
       role,
     });
     // Response
     res.status(201).json({
       msg: "Done Created User",
-      data: [{ name: user.name, phone: user.phone, role: user.role }]
+      data: [{ name: user.name, phone: user.phone, email: user.email, role: user.role }]
     });
   } catch (error) {
     
