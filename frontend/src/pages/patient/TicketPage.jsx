@@ -30,12 +30,11 @@ function TicketPage() {
 
   // Per-second countdown decrement
   useEffect(() => {
-    if (countdownSeconds === null || countdownSeconds <= 0) return;
     const timer = setInterval(() => {
-      setCountdownSeconds((prev) => (prev !== null && prev > 0 ? prev - 1 : 0));
+      setCountdownSeconds((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
     }, 1000);
     return () => clearInterval(timer);
-  }, [countdownSeconds]);
+  }, []);
 
   // Date logic
   const today = new Date();
@@ -147,7 +146,7 @@ function TicketPage() {
                 </div>
                 <Badge
                   bg={isYourTurn ? 'success' : queueState === 'paused' ? 'warning' : 'primary'}
-                  className="ticket-status-badge px-4 py-2 rounded-pill fs-6 mt-2 text-dark-if-warning"
+                  className={`ticket-status-badge px-4 py-2 rounded-pill fs-6 mt-2 ${queueState === 'paused' ? 'text-dark' : ''}`}
                 >
                   {isYourTurn 
                     ? t('yourTurn') 
