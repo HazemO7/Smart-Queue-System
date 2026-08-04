@@ -34,8 +34,9 @@ export function NotificationProvider({ children }) {
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    const handleYourTurn = (data) => {
+    const handleNewNotification = (data) => {
       const notif = data.notification;
+      if (!notif || !notif._id) return;
       // Deduplicate by _id
       setNotifications(prev => {
         if (prev.some(n => n._id === notif._id)) return prev;
@@ -46,10 +47,12 @@ export function NotificationProvider({ children }) {
       setShowToast(true);
     };
 
-    socket.on('notification:yourTurn', handleYourTurn);
+    socket.on('notification:yourTurn', handleNewNotification);
+    socket.on('notification:new', handleNewNotification);
 
     return () => {
-      socket.off('notification:yourTurn', handleYourTurn);
+      socket.off('notification:yourTurn', handleNewNotification);
+      socket.off('notification:new', handleNewNotification);
     };
   }, [socket, isConnected]);
 

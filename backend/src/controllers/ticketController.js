@@ -5,6 +5,7 @@ const Clinic = require('../models/Clinic');
 const Appointment = require('../models/Appointment');
 const User = require('../models/User');
 const { sendBookingConfirmation } = require('../services/emailService');
+const { getTicketWaitInfo, getAvgServiceDuration } = require('../services/waitTimeService');
 
 const bookTicket = async (req, res, next) => {
   try {
@@ -109,6 +110,8 @@ const bookTicket = async (req, res, next) => {
         ticketNumber: { $lt: nextTicketNumber },
       }) : null;
 
+      const avgDuration = openQueue ? await getAvgServiceDuration(clinicId, dayStart, dayEnd) : null;
+
       sendBookingConfirmation({
         to: user.email,
         patientName: user.name,
@@ -116,7 +119,7 @@ const bookTicket = async (req, res, next) => {
         ticketNumber: nextTicketNumber,
         bookingDate: dayStart.toISOString().split('T')[0],
         queuePosition: position,
-        estimatedWait: position ? position * 7 : null,
+        estimatedWait: position ? Math.ceil(position * avgDuration) : null,
       }).catch(err => console.error('[Email] Failed to send booking confirmation:', err.message));
     }
 
@@ -168,10 +171,26 @@ const getMyTickets = async (req, res, next) => {
       .populate('queueId', 'currentServingNumber status')
       .sort({ bookingDate: 1 });
 
+    const enhancedTickets = await Promise.all(
+      tickets.map(async (ticket) => {
+        const ticketObj = ticket.toObject();
+        const waitInfo = await getTicketWaitInfo(ticketObj, ticket.queueId);
+
+        return {
+          ...ticketObj,
+          clinicName: ticket.clinicId?.name || '',
+          currentServingNumber: ticket.queueId?.currentServingNumber || 0,
+          position: waitInfo.position,
+          estimatedWaitMinutes: waitInfo.estimatedWaitMinutes,
+          queueState: waitInfo.queueState,
+        };
+      })
+    );
+
     return res.status(200).json({
       status: 'success',
-      results: tickets.length,
-      data: { tickets },
+      results: enhancedTickets.length,
+      data: { tickets: enhancedTickets },
     });
   } catch (error) {
     next(error);
