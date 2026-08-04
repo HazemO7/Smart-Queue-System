@@ -8,6 +8,7 @@ import App from './App.jsx';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { QueueProvider } from './context/QueueContext';
 
 createRoot(document.getElementById('root')).render(
@@ -16,9 +17,11 @@ createRoot(document.getElementById('root')).render(
       <LanguageProvider>
         <AuthProvider>
           <SocketProvider>
-            <QueueProvider>
-              <App />
-            </QueueProvider>
+            <NotificationProvider>
+              <QueueProvider>
+                <App />
+              </QueueProvider>
+            </NotificationProvider>
           </SocketProvider>
         </AuthProvider>
       </LanguageProvider>

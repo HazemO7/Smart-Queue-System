@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { FiGlobe, FiLogOut, FiLogIn } from 'react-icons/fi';
+import NotificationBell from './NotificationBell';
 
 function Navbar() {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
@@ -30,6 +31,9 @@ function Navbar() {
             )}
             {isAuthenticated && isAdmin && (
               <Nav.Link as={Link} to="/admin" className="nav-link-custom">{t('dashboard')}</Nav.Link>
+            )}
+            {isAuthenticated && !isAdmin && (
+              <NotificationBell />
             )}
             <Button
               variant="outline-secondary"

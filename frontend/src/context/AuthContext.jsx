@@ -89,7 +89,7 @@ export function AuthProvider({ children }) {
 
   // ─── Register ────────────────────────────────────────────────
   // Backend register does NOT return a JWT, so we auto-login after.
-  const register = useCallback(async (name, phone, password) => {
+  const register = useCallback(async (name, phone, email, password) => {
     setIsLoading(true);
     setError('');
     try {
@@ -97,6 +97,7 @@ export function AuthProvider({ children }) {
       await api.post('/auth/register', {
         name: name.trim(),
         phone: phone.trim(),
+        email: email ? email.trim() : undefined,
         password,
       });
 
