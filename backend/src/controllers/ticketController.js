@@ -5,7 +5,7 @@ const Clinic = require('../models/Clinic');
 const Appointment = require('../models/Appointment');
 const User = require('../models/User');
 const { sendBookingConfirmation } = require('../services/emailService');
-const { getTicketWaitInfo, getAvgServiceDuration } = require('../services/waitTimeService');
+const { getTicketWaitInfo, getAvgServiceDuration, getAllTicketWaitInfo } = require('../services/waitTimeService');
 
 const bookTicket = async (req, res, next) => {
   try {
@@ -135,6 +135,28 @@ const bookTicket = async (req, res, next) => {
       },
     });
 
+    // If the ticket is immediately Live (queue already open),
+    // recalculate and broadcast updated positions to ALL patients in the queue.
+    // This ensures existing patients know their wait time increased, and the
+    // new patient receives their own position immediately via socket.
+    if (newTicket.status === 'Live' && openQueue) {
+      try {
+        const waitInfos = await getAllTicketWaitInfo(openQueue._id, clinicId, openQueue);
+        waitInfos.forEach((info) => {
+          io.to(`user:${info.userId}`).emit('queue:update', {
+            clinicId: clinicId.toString(),
+            ticketNumber: info.ticketNumber,
+            position: info.position,
+            estimatedWaitMinutes: info.estimatedWaitMinutes,
+            queueState: info.queueState,
+            currentServingNumber: info.currentServingNumber,
+          });
+        });
+      } catch (broadcastErr) {
+        console.error('[bookTicket] Failed to broadcast queue position updates:', broadcastErr.message);
+      }
+    }
+
     res.status(201).json({
       status: 'success',
       message: openQueue
@@ -174,7 +196,17 @@ const getMyTickets = async (req, res, next) => {
     const enhancedTickets = await Promise.all(
       tickets.map(async (ticket) => {
         const ticketObj = ticket.toObject();
-        const waitInfo = await getTicketWaitInfo(ticketObj, ticket.queueId);
+
+        // CRITICAL: ticket.clinicId is a populated Mongoose document after .populate().
+        // Calling ticket.toObject() converts it to a plain JS object: { _id, name, description }.
+        // Passing that whole object to getTicketWaitInfo's MongoDB query
+        // ({ clinicId: { _id, name } }) never matches any document — it always returns 0.
+        // This caused ALL users to get position=0 ("your turn") regardless of their real position.
+        // Fix: always extract the raw ObjectId before passing to the service.
+        const clinicIdForQuery = ticket.clinicId?._id || ticket.clinicId;
+        const ticketForService = { ...ticketObj, clinicId: clinicIdForQuery };
+
+        const waitInfo = await getTicketWaitInfo(ticketForService, ticket.queueId);
 
         return {
           ...ticketObj,

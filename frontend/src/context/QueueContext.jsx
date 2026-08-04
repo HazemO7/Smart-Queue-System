@@ -123,18 +123,31 @@ export function QueueProvider({ children }) {
   }, [fetchMyTicket]);
 
   // ─────────────────────────────────────────────
-  //  Socket event listeners
+  //  Room joining — runs when clinics list changes
+  //  (separate from listeners to avoid listener churn)
   // ─────────────────────────────────────────────
   useEffect(() => {
     if (!socket || !isConnected) return;
-
-    // Join all clinic rooms so we receive updates
     clinics.forEach((clinic) => {
       if (!joinedRooms.current.has(clinic.id)) {
         socket.emit('join:clinic', clinic.id);
         joinedRooms.current.add(clinic.id);
       }
     });
+  }, [socket, isConnected, clinics]);
+
+  // ─────────────────────────────────────────────
+  //  Socket event listeners
+  //  Intentionally depends ONLY on socket/isConnected —
+  //  NOT on clinics. All handlers use functional state
+  //  updaters (prev =>) so they never need to close over
+  //  stale state. This prevents the listeners from being
+  //  torn-down & re-registered on every clinic update,
+  //  which was causing queue:update events to be dropped
+  //  during the teardown window.
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!socket || !isConnected) return;
 
     // Handler: Admin started a shift (queue opened, tickets activated)
     const handleQueueStarted = (data) => {
@@ -150,7 +163,9 @@ export function QueueProvider({ children }) {
           };
         })
       );
-      // If patient has a pending ticket for this clinic, it's now live
+      // If patient has a pending ticket for this clinic, it's now live.
+      // Position/estimatedWait will arrive via the queue:update that
+      // startShift emits immediately after.
       setPatientTicket((prev) => {
         if (!prev || prev.clinicId !== data.clinicId) return prev;
         const updated = { ...prev, status: 'Live', queueState: 'open' };
@@ -197,7 +212,8 @@ export function QueueProvider({ children }) {
           };
         })
       );
-      // Update patient ticket — check if they're being served
+      // Mark the served patient's ticket. All remaining patients' positions
+      // are updated individually via the queue:update event that callNext emits.
       setPatientTicket((prev) => {
         if (!prev || prev.clinicId !== data.clinicId) return prev;
         if (prev.ticketNumber === data.servedTicket?.ticketNumber) {
@@ -276,6 +292,10 @@ export function QueueProvider({ children }) {
       });
     };
 
+    // Handler: Per-user queue position update.
+    // The backend emits this to each user's personal room (user:${userId})
+    // with values calculated specifically for that ticket. The ticketNumber
+    // guard below ensures a stale event cannot overwrite a different user's data.
     const handleQueueUpdate = (data) => {
       setClinics((prev) =>
         prev.map((clinic) => {
@@ -283,13 +303,16 @@ export function QueueProvider({ children }) {
           return {
             ...clinic,
             currentServing: data.currentServingNumber !== undefined ? data.currentServingNumber : clinic.currentServing,
-            queueState: data.queueState || clinic.queueState,
-            isOpen: data.queueState === 'open',
+            queueState: data.queueState === 'open' || data.queueState === 'your-turn'
+              ? 'open'
+              : data.queueState || clinic.queueState,
+            isOpen: data.queueState === 'open' || data.queueState === 'your-turn',
           };
         })
       );
       setPatientTicket((prev) => {
         if (!prev || prev.clinicId !== data.clinicId) return prev;
+        // Guard: reject this update if it belongs to a different ticket
         if (prev.ticketNumber && data.ticketNumber && prev.ticketNumber !== data.ticketNumber) return prev;
         const updated = {
           ...prev,
@@ -311,7 +334,7 @@ export function QueueProvider({ children }) {
     socket.on('queue:resumed', handleQueueResumed);
     socket.on('queue:update', handleQueueUpdate);
 
-    // Cleanup listeners on unmount or dependency change
+    // Cleanup listeners only when socket itself changes (not on every clinic update)
     return () => {
       socket.off('queue:started', handleQueueStarted);
       socket.off('queue:closed', handleQueueClosed);
@@ -321,7 +344,8 @@ export function QueueProvider({ children }) {
       socket.off('queue:resumed', handleQueueResumed);
       socket.off('queue:update', handleQueueUpdate);
     };
-  }, [socket, isConnected, clinics]);
+  }, [socket, isConnected]);
+
 
   // ─────────────────────────────────────────────
   //  Context functions (preserve existing signatures)
@@ -385,9 +409,15 @@ export function QueueProvider({ children }) {
         });
         const newTicket = res.data?.data?.ticket;
         if (newTicket) {
+          // Store the raw ticket immediately so the UI unblocks
           setPatientTicket(newTicket);
           sessionStorage.setItem('sq-ticket', JSON.stringify(newTicket));
           setShowSuccess(true);
+
+          // Then fetch the enriched ticket (with server-calculated position &
+          // estimatedWaitMinutes) so the booking confirmation screen shows the
+          // correct per-user values right away, without waiting for the socket.
+          fetchMyTicket();
         }
       } catch (err) {
         console.error('[QueueContext] Book ticket failed:', err);
@@ -396,7 +426,7 @@ export function QueueProvider({ children }) {
         throw err;
       }
     },
-    [availableAppointments]
+    [availableAppointments, fetchMyTicket]
   );
 
   const callNextPatient = useCallback(
@@ -473,10 +503,18 @@ export function QueueProvider({ children }) {
           return patientTicket.estimatedWaitMinutes;
         }
       }
+      // Fallback: estimate from clinic state when backend value is unavailable.
+      // peopleAhead = tickets with lower numbers still waiting.
+      // When no one has been served yet (currentServing=0), use ticketNumber-1.
+      // Once the queue is active, the currently-serving ticket is already at the
+      // counter, so people ahead = ticketNumber - currentServing - 1.
       const clinic = clinics.find((c) => c.id === clinicId);
-      if (!clinic) return 0;
-      const position = ticketNumber - clinic.currentServing;
-      return Math.max(0, position * 7); // ~7 min per patient
+      if (!clinic) return null;
+      const currentServing = clinic.currentServing || 0;
+      const peopleAhead = currentServing === 0
+        ? Math.max(0, ticketNumber - 1)
+        : Math.max(0, ticketNumber - currentServing - 1);
+      return peopleAhead * 7; // ~7 min per patient default
     },
     [clinics, patientTicket]
   );
@@ -488,9 +526,14 @@ export function QueueProvider({ children }) {
           return patientTicket.position;
         }
       }
+      // Fallback: estimate from clinic state when backend value is unavailable.
+      // position = number of people AHEAD (0 = you're next).
       const clinic = clinics.find((c) => c.id === clinicId);
       if (!clinic) return 0;
-      return Math.max(0, ticketNumber - clinic.currentServing);
+      const currentServing = clinic.currentServing || 0;
+      return currentServing === 0
+        ? Math.max(0, ticketNumber - 1)
+        : Math.max(0, ticketNumber - currentServing - 1);
     },
     [clinics, patientTicket]
   );
