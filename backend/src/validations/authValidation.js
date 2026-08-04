@@ -17,6 +17,10 @@ const Joi = require('joi');
                 'any.required': 'رقم الهاتف مطلوب'
             }),
 
+        email: Joi.string().email().allow('').optional().messages({
+            'string.email': 'Please enter a valid email address',
+        }),
+
         password: Joi.string().min(6).required().messages({
             'string.min': 'كلمة المرور يجب أن تتكون من 6 أحرف على الأقل',
             'string.empty': 'الرجاء إدخال كلمة المرور',
