@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const { registerSchema, loginSchema } = require("../validations/authValidation");
 
 /////////////// register user ////////////////////
-const register = async (req, res) => {
+const register = async (req, res, next) => {
   try {
     const { error, value } = registerSchema.validate(req.body, {
       abortEarly: false,
@@ -19,7 +19,7 @@ const register = async (req, res) => {
     }
 
     // get Data
-    const { name, phone, password, role } = value;
+    const { name, phone, password, role, email } = value;
     // Validated Data
     if (!name || !phone || !password)
       return res.status(400).json({ msg: "Missing Data" });
@@ -33,23 +33,25 @@ const register = async (req, res) => {
     const user = await User.create({
       name,
       phone,
+      email,
       password: hashPassword,
       role,
     });
     // Response
     res.status(201).json({
       msg: "Done Created User",
-      data: [{ name: user.name, phone: user.phone, role: user.role }]
+      data: [{ name: user.name, phone: user.phone, email: user.email, role: user.role }]
     });
   } catch (error) {
-    console.log(error);
+    
+    next(error);
   }
 };
 
 
 
 /////////////// login user ////////////////////
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     const { error, value } = loginSchema.validate(req.body, {
       abortEarly: false,
@@ -95,23 +97,26 @@ const login = async (req, res) => {
     });
 
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ msg: "Internal server error" });
+
+    next(error);
+    
   }
 };
 
 /////////////// logout user /////////////
 
-const logout = async (req, res) => {
+const logout = async (req, res, next) => {
   try {   
     res.status(200).json({
       msg: "Logout successful",     
     });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ msg: "Internal server error" });
+
+   next(error);
+
   }
 };
+
 
 module.exports = {
     register , login, logout

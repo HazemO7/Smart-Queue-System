@@ -1,125 +1,255 @@
-const  Queue = require("../models/Queue");
+const mongoose = require('mongoose');
+const Queue = require('../models/Queue');
+const Ticket = require('../models/Ticket');
+const Clinic = require('../models/Clinic');
+const Notification = require('../models/Notification');
+const User = require('../models/User');
+const { sendTurnNotificationEmail } = require('../services/emailService');
 
-// create new queue for clinic
-
-const createQueue = async (req, res) => {
+const startShift = async (req, res, next) => {
   try {
-    const { clinicId, adminId, date, averageServiceTime } = req.body;
+    const { clinicId } = req.body;
 
- 
+    if (!clinicId) {
+      return res.status(400).json({ status: 'fail', message: 'clinicId is required' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(clinicId)) {
+      return res.status(400).json({ status: 'fail', message: 'Invalid clinic ID format' });
+    }
+
+    const clinic = await Clinic.findById(clinicId);
+    if (!clinic) {
+      return res.status(404).json({ status: 'fail', message: 'Clinic not found' });
+    }
+
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+
     const existingQueue = await Queue.findOne({
       clinicId,
-      isActive: true,
+      date: { $gte: todayStart, $lte: todayEnd },
+      status: 'Open',
     });
 
     if (existingQueue) {
       return res.status(400).json({
         status: 'fail',
-        message: 'There is already an active queue for this clinic.',
+        message: 'There is already an open queue for this clinic today',
+        data: { queue: existingQueue },
       });
     }
 
-    // Create the new queue
     const newQueue = await Queue.create({
       clinicId,
-      adminId, // usually taken from req.user.id if using auth middleware
-      date: date || Date.now(),
-      averageServiceTime,
+      date: now,
+      status: 'Open',
+      currentServingNumber: 0,
+    });
+
+    const activationResult = await Ticket.updateMany(
+      {
+        clinicId,
+        bookingDate: { $gte: todayStart, $lte: todayEnd },
+        status: 'Pending',
+      },
+      { $set: { queueId: newQueue._id, status: 'Live' } }
+    );
+
+    // Emit socket event after successful DB update
+    const io = req.app.get('io');
+    io.to(`clinic:${clinicId}`).emit('queue:started', {
+      clinicId: clinicId.toString(),
+      queue: {
+        _id: newQueue._id,
+        status: newQueue.status,
+        currentServingNumber: newQueue.currentServingNumber,
+      },
+      activatedTickets: activationResult.modifiedCount,
     });
 
     res.status(201).json({
       status: 'success',
+      message: `Shift started. ${activationResult.modifiedCount} ticket(s) activated.`,
       data: {
         queue: newQueue,
+        activatedTickets: activationResult.modifiedCount,
       },
     });
-    
-  } catch (err) {
-    res.status(400).json({
-      status: 'fail',
-      message: err.message,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
-
-
-
-
-// get all active queues for a clinic
-const getActiveQueues = async (req, res) => {
-  try {
-    const { clinicId } = req.params;
-
-    if (!clinicId) {
-      return res.status(400).json({
-        status: 'fail',
-        message: 'Clinic ID is required',
-      });
-    }
-    const activeQueues = await Queue.find({ clinicId, isActive: true });
-
-    return res.status(200).json({
-      status: 'success',
-      results: activeQueues.length,
-      data: {
-        queues: activeQueues,
-      },
-    });
-
-  } catch (err) {
-    return res.status(500).json({
-      status: 'error',
-      message: 'Something went wrong on the server',
-      error: err.message, 
-    });
-  }
-};
-
-
-
-// close a specific queue (Update isActive to false)
-const closeQueue = async (req, res) => {
+const closeShift = async (req, res, next) => {
   try {
     const { queueId } = req.params;
 
-    if (!queueId) {
-      return res.status(400).json({
-        status: 'fail',
-        message: 'Queue ID is required',
-      });
+    if (!queueId || !mongoose.Types.ObjectId.isValid(queueId)) {
+      return res.status(400).json({ status: 'fail', message: 'Valid queue ID is required' });
     }
+
     const updatedQueue = await Queue.findByIdAndUpdate(
       queueId,
-      { isActive: false },
+      { status: 'Closed' },
       { new: true }
     );
 
     if (!updatedQueue) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'No queue found with that ID',
-      });
+      return res.status(404).json({ status: 'fail', message: 'No queue found with that ID' });
     }
+
+    const noShowResult = await Ticket.updateMany(
+      { queueId: updatedQueue._id, status: 'Live' },
+      { $set: { status: 'No-Show' } }
+    );
+
+    // Emit socket event after successful DB update
+    const io = req.app.get('io');
+    io.to(`clinic:${updatedQueue.clinicId}`).emit('queue:closed', {
+      clinicId: updatedQueue.clinicId.toString(),
+      queueId: updatedQueue._id.toString(),
+      noShowTickets: noShowResult.modifiedCount,
+    });
 
     return res.status(200).json({
       status: 'success',
-      message: 'Queue has been closed successfully',
+      message: `Queue closed. ${noShowResult.modifiedCount} remaining ticket(s) marked as No-Show.`,
       data: {
         queue: updatedQueue,
+        noShowTickets: noShowResult.modifiedCount,
       },
     });
-
-  } catch (err) {
-    return res.status(500).json({
-      status: 'error',
-      message: 'Something went wrong while closing the queue',
-      error: err.message,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
+const getActiveQueues = async (req, res, next) => {
+  try {
+    const { clinicId } = req.params;
 
-// Exporting the functions to be used in routes
+    if (!clinicId || !mongoose.Types.ObjectId.isValid(clinicId)) {
+      return res.status(400).json({ status: 'fail', message: 'Valid clinic ID is required' });
+    }
 
-module.exports = { createQueue, getActiveQueues , closeQueue };
+    const activeQueues = await Queue.find({ clinicId, status: 'Open' });
+
+    return res.status(200).json({
+      status: 'success',
+      results: activeQueues.length,
+      data: { queues: activeQueues },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/////////////// Call Next Patient ////////////////////
+
+const callNext = async (req, res, next) => {
+  try {
+    const { queueId } = req.params;
+
+    if (!queueId || !mongoose.Types.ObjectId.isValid(queueId)) {
+      return res.status(400).json({ status: 'fail', message: 'Valid queue ID is required' });
+    }
+
+    const queue = await Queue.findById(queueId);
+    if (!queue || queue.status !== 'Open') {
+      return res.status(404).json({ status: 'fail', message: 'No open queue found with that ID' });
+    }
+
+    // Find the next Live ticket with the lowest ticketNumber
+    const nextTicket = await Ticket.findOne({
+      queueId: queue._id,
+      status: 'Live',
+    })
+      .sort({ ticketNumber: 1 })
+      .populate('userId', 'name phone');
+
+    if (!nextTicket) {
+      return res.status(400).json({ status: 'fail', message: 'No more patients in the queue' });
+    }
+
+    // Mark the ticket as Served
+    nextTicket.status = 'Served';
+    await nextTicket.save();
+
+    // Update the queue's currentServingNumber
+    queue.currentServingNumber = nextTicket.ticketNumber;
+    await queue.save();
+
+    // Emit socket event so all connected clients see the update instantly
+    const io = req.app.get('io');
+
+    // Create and send "your turn" notification
+    const clinicDoc = await Clinic.findById(queue.clinicId).select('name');
+    const notification = await Notification.create({
+      userId: nextTicket.userId._id,
+      type: 'your-turn',
+      title: "It's your turn!",
+      message: `Please proceed to ${clinicDoc?.name || 'the clinic'}.`,
+      data: {
+        clinicId: queue.clinicId.toString(),
+        clinicName: clinicDoc?.name || '',
+        ticketNumber: nextTicket.ticketNumber,
+      },
+    });
+
+    // Emit targeted notification to the specific patient
+    io.to(`user:${nextTicket.userId._id.toString()}`).emit('notification:yourTurn', {
+      notification: {
+        _id: notification._id.toString(),
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        data: notification.data,
+        isRead: notification.isRead,
+        createdAt: notification.createdAt,
+      },
+    });
+
+    // Send email notification (fire-and-forget)
+    const userForEmail = await User.findById(nextTicket.userId._id).select('email name');
+    if (userForEmail?.email) {
+      sendTurnNotificationEmail({
+        to: userForEmail.email,
+        patientName: userForEmail.name,
+        clinicName: clinicDoc?.name || 'the clinic',
+        ticketNumber: nextTicket.ticketNumber,
+      }).catch(err => console.error('[Email] Failed to send turn notification:', err.message));
+    }
+
+    // Emit queue update to clinic room
+    io.to(`clinic:${queue.clinicId}`).emit('queue:next', {
+      clinicId: queue.clinicId.toString(),
+      queueId: queue._id.toString(),
+      currentServingNumber: queue.currentServingNumber,
+      servedTicket: {
+        _id: nextTicket._id.toString(),
+        ticketNumber: nextTicket.ticketNumber,
+        userId: nextTicket.userId._id.toString(),
+        patientName: nextTicket.userId.name,
+      },
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      message: `Now serving ticket #${nextTicket.ticketNumber}`,
+      data: {
+        queue,
+        servedTicket: nextTicket,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { startShift, closeShift, getActiveQueues, callNext };
+
+

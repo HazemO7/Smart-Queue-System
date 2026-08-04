@@ -1,111 +1,403 @@
+/* ===================================
+   SMART QUEUE SYSTEM — Design System
+   Calming Healthcare Light Theme
+   =================================== */
+
+/* --- CSS Custom Properties --- */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Primary Palette */
+  --sq-primary: #4A90D9;
+  --sq-primary-hover: #3A7BC8;
+  --sq-primary-light: #E8F4FD;
+  --sq-primary-subtle: #F0F7FF;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Accent / Success */
+  --sq-success: #2ECC71;
+  --sq-success-hover: #27AE60;
+  --sq-success-light: #E8F8F0;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Warning */
+  --sq-warning: #F39C12;
+  --sq-warning-light: #FEF5E7;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  /* Danger */
+  --sq-danger: #E74C3C;
+  --sq-danger-light: #FDEDEC;
+
+  /* Neutrals */
+  --sq-bg: #F8FAFE;
+  --sq-bg-white: #FFFFFF;
+  --sq-text: #2C3E50;
+  --sq-text-muted: #7F8C8D;
+  --sq-text-light: #95A5A6;
+  --sq-border: #E8ECF1;
+  --sq-border-light: #F0F3F7;
+
+  /* Shadows */
+  --sq-shadow-sm: 0 1px 3px rgba(74, 144, 217, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --sq-shadow-md: 0 4px 12px rgba(74, 144, 217, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --sq-shadow-lg: 0 10px 30px rgba(74, 144, 217, 0.12), 0 4px 8px rgba(0, 0, 0, 0.04);
+  --sq-shadow-xl: 0 20px 50px rgba(74, 144, 217, 0.15), 0 8px 16px rgba(0, 0, 0, 0.06);
+
+  /* Typography */
+  --sq-font: 'Inter', 'Noto Kufi Arabic', -apple-system, BlinkMacSystemFont, sans-serif;
+  --sq-font-ar: 'Noto Kufi Arabic', 'Inter', sans-serif;
+
+  /* Radius */
+  --sq-radius-sm: 8px;
+  --sq-radius-md: 12px;
+  --sq-radius-lg: 16px;
+  --sq-radius-xl: 24px;
+
+  /* Transitions */
+  --sq-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* --- Bootstrap Overrides --- */
+:root {
+  --bs-primary: #4A90D9;
+  --bs-primary-rgb: 74, 144, 217;
+  --bs-success: #2ECC71;
+  --bs-success-rgb: 46, 204, 113;
+  --bs-body-font-family: 'Inter', 'Noto Kufi Arabic', -apple-system, sans-serif;
+  --bs-body-bg: #F8FAFE;
+  --bs-body-color: #2C3E50;
+}
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+/* --- Global Reset & Base --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Arabic RTL font override */
+html[dir="rtl"] {
+  font-family: var(--sq-font-ar);
+}
+
+html[dir="rtl"] body,
+html[dir="rtl"] .btn,
+html[dir="rtl"] .form-control,
+html[dir="rtl"] .form-label,
+html[dir="rtl"] .card,
+html[dir="rtl"] .nav-link,
+html[dir="rtl"] .navbar-brand {
+  font-family: var(--sq-font-ar);
 }
 
 body {
   margin: 0;
+  font-family: var(--sq-font);
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--sq-text);
+  background: var(--sq-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+/* --- Typography --- */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: var(--sq-text);
+  line-height: 1.3;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--sq-text);
+}
+
+.section-subtitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--sq-text);
+}
+
+/* --- Buttons: Oversized for Elderly Users --- */
+.btn {
+  font-family: var(--sq-font);
+  font-weight: 600;
+  border-radius: var(--sq-radius-md);
+  transition: var(--sq-transition);
+  letter-spacing: 0.2px;
+}
+
+.btn-lg {
+  min-height: 56px;
+  font-size: 1.1rem;
+  padding: 12px 28px;
+}
+
+.btn-primary {
+  background: var(--sq-primary);
+  border-color: var(--sq-primary);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background: var(--sq-primary-hover);
+  border-color: var(--sq-primary-hover);
+  box-shadow: var(--sq-shadow-md);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-outline-primary {
+  color: var(--sq-primary);
+  border-color: var(--sq-primary);
+  border-width: 2px;
+}
+
+.btn-outline-primary:hover {
+  background: var(--sq-primary);
+  border-color: var(--sq-primary);
+  box-shadow: var(--sq-shadow-md);
+  transform: translateY(-1px);
+}
+
+/* CTA Primary Button */
+.btn-cta-primary {
+  background: linear-gradient(135deg, var(--sq-primary), #3A7BC8);
+  border: none;
+  color: #fff;
+  min-height: 60px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  border-radius: var(--sq-radius-lg);
+  padding: 14px 32px;
+  box-shadow: 0 4px 15px rgba(74, 144, 217, 0.3);
+  transition: var(--sq-transition);
+}
+
+.btn-cta-primary:hover {
+  background: linear-gradient(135deg, #3A7BC8, #2A6BB8);
+  box-shadow: 0 6px 20px rgba(74, 144, 217, 0.4);
+  transform: translateY(-2px);
+  color: #fff;
+}
+
+.btn-cta-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(74, 144, 217, 0.3);
+}
+
+/* CTA Secondary Button */
+.btn-cta-secondary {
+  min-height: 60px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  border-radius: var(--sq-radius-lg);
+  padding: 14px 32px;
+  border-width: 2px;
+}
+
+/* CTA Small for Navbar */
+.btn-cta-sm {
+  background: linear-gradient(135deg, var(--sq-primary), #3A7BC8);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-cta-sm:hover {
+  background: linear-gradient(135deg, #3A7BC8, #2A6BB8);
+  color: #fff;
+}
+
+/* --- Forms: Large & Clear --- */
+.form-control {
+  font-family: var(--sq-font);
+  border-radius: var(--sq-radius-md);
+  border: 2px solid var(--sq-border);
+  transition: var(--sq-transition);
+  font-size: 1rem;
+}
+
+.form-control-lg {
+  min-height: 56px;
+  font-size: 1.05rem;
+  padding: 12px 16px;
+}
+
+.form-control:focus {
+  border-color: var(--sq-primary);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.15);
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--sq-text);
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+}
+
+.form-label-lg {
+  font-weight: 600;
+  color: var(--sq-text);
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+.form-check-input:checked {
+  background-color: var(--sq-primary);
+  border-color: var(--sq-primary);
+}
+
+/* Larger toggle switch */
+.clinic-toggle .form-check-input {
+  width: 52px;
+  height: 28px;
+  cursor: pointer;
+}
+
+/* --- Cards --- */
+.card {
+  border-radius: var(--sq-radius-lg);
+  border: 1px solid var(--sq-border-light);
+  transition: var(--sq-transition);
+  overflow: hidden;
+}
+
+/* --- Navbar --- */
+.navbar-main {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--sq-border-light);
+}
+
+.brand-icon {
+  font-size: 1.5rem;
+}
+
+.brand-text {
+  font-size: 1.25rem;
+  color: var(--sq-primary);
+}
+
+.nav-link-custom {
   font-weight: 500;
-  color: var(--text-h);
+  color: var(--sq-text) !important;
+  padding: 8px 16px !important;
+  border-radius: var(--sq-radius-sm);
+  transition: var(--sq-transition);
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
+.nav-link-custom:hover {
+  color: var(--sq-primary) !important;
+  background: var(--sq-primary-subtle);
+}
+
+.lang-toggle {
+  font-weight: 500;
+  font-size: 0.85rem;
+  border-color: var(--sq-border);
+}
+
+/* --- Footer --- */
+.footer-main {
+  background: var(--sq-bg-white);
+  border-top: 1px solid var(--sq-border-light);
+}
+
+/* --- Animations --- */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(46, 204, 113, 0);
   }
 }
-p {
-  margin: 0;
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+/* Page entrance animation */
+.landing-page,
+.auth-page,
+.clinics-page,
+.booking-page,
+.ticket-page,
+.admin-page,
+.queue-management-page {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sq-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sq-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sq-text-light);
+}
+
+/* --- Responsive Base --- */
+@media (max-width: 768px) {
+  body {
+    font-size: 16px;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .btn-cta-primary,
+  .btn-cta-secondary {
+    min-height: 56px;
+    font-size: 1.05rem;
+  }
 }
